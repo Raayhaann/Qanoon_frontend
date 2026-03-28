@@ -37,14 +37,22 @@ export function useChat(): UseChatReturn {
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const onStreamEnd = useRef<((data: StreamEvent) => void) | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const reconnectAttempts = useRef(0);
+
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const BASE_DELAY_MS = 1000;
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat/`);
 
-    ws.onopen = () => setConnected(true);
+    ws.onopen = () => {
+      reconnectAttempts.current = 0;
+      setConnected(true);
+    };
 
     ws.onmessage = (event) => {
       const data: StreamEvent = JSON.parse(event.data);
@@ -80,7 +88,11 @@ export function useChat(): UseChatReturn {
 
     ws.onclose = () => {
       setConnected(false);
-      reconnectTimer.current = setTimeout(connect, 3000);
+      if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+        const delay = BASE_DELAY_MS * Math.pow(2, reconnectAttempts.current);
+        reconnectAttempts.current += 1;
+        reconnectTimer.current = setTimeout(connect, delay);
+      }
     };
 
     ws.onerror = () => ws.close();

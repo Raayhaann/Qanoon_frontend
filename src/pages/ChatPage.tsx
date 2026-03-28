@@ -1,19 +1,24 @@
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
-  Send,
   LogOut,
   MessageSquare,
-  XCircle,
   Menu,
   Scale,
-  Loader2,
   User,
-  Bot,
+  Trash2,
+  ShieldAlert,
+  EyeOff,
+  Briefcase,
+  X,
+  PanelLeftClose,
+  PanelLeft,
+  SquarePen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ChatMessage, StreamingMessage } from "@/components/ChatMessage";
+import { ChatInput } from "@/components/ChatInput";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LangContext";
 import { useChat, type StreamEvent } from "@/hooks/useChat";
@@ -38,7 +43,9 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const skipNextFetch = useRef(false);
 
   const {
     connected,
@@ -57,6 +64,10 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      return;
+    }
     if (activeId) {
       listMessages(activeId)
         .then(setMessages)
@@ -102,18 +113,20 @@ export default function ChatPage() {
   }, [activeId]);
 
   async function handleNewChat() {
-    try {
-      const conv = await createConversation();
-      setConversations((prev) => [conv, ...prev]);
-      setActiveId(conv.id);
-      setSidebarOpen(false);
-    } catch {
-      /* ignore */
+    setActiveId(null);
+    setMessages([]);
+    setSidebarOpen(false);
+  }
+
+  function handleDeleteConversation(id: number) {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (activeId === id) {
+      setActiveId(null);
+      setMessages([]);
     }
   }
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
+  async function handleSend() {
     const text = input.trim();
     if (!text || sending) return;
 
@@ -140,6 +153,7 @@ export default function ChatPage() {
           const conv = await createConversation();
           setConversations((prev) => [conv, ...prev]);
           convId = conv.id;
+          skipNextFetch.current = true;
           setActiveId(conv.id);
         }
         const resp = await sendMessage(convId, text);
@@ -167,17 +181,47 @@ export default function ChatPage() {
     }
   }
 
+  function handleSuggestion(text: string) {
+    setInput(text);
+  }
+
   async function handleLogout() {
     await logout();
     navigate("/login", { replace: true });
   }
 
+  const suggestions = [
+    {
+      icon: Briefcase,
+      text: t(
+        "What are my rights if I get fired without notice?",
+        "ما هي حقوقي إذا تم فصلي بدون إنذار؟"
+      ),
+    },
+    {
+      icon: EyeOff,
+      text: t(
+        "Is recording someone without permission legal in Libya?",
+        "هل تسجيل شخص بدون إذنه قانوني في ليبيا؟"
+      ),
+    },
+    {
+      icon: ShieldAlert,
+      text: t(
+        "What does Libyan law say about workplace discrimination?",
+        "ماذا يقول القانون الليبي عن التمييز في مكان العمل؟"
+      ),
+    },
+  ];
+
+  const showEmptyState = messages.length === 0 && !streaming;
+
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar overlay for mobile */}
+      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[2px] md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -185,223 +229,272 @@ export default function ChatPage() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 z-40 flex w-72 flex-col border-e border-border bg-muted/50 transition-transform md:relative md:translate-x-0",
+          "fixed inset-y-0 start-0 z-40 flex flex-col border-e border-border/50 bg-card transition-all duration-200 md:relative md:translate-x-0",
+          sidebarCollapsed ? "md:w-16" : "md:w-64",
           sidebarOpen
-            ? "translate-x-0"
-            : "ltr:-translate-x-full rtl:translate-x-full"
+            ? "w-64 translate-x-0"
+            : "max-md:ltr:-translate-x-full max-md:rtl:translate-x-full"
         )}
       >
-        {/* Sidebar header */}
-        <div className="flex h-14 items-center justify-between border-b border-border px-4">
-          <span className="text-sm font-bold text-primary">
-            Qanoon<span className="text-foreground">.ly</span>
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNewChat}
-            title={t("New Chat", "محادثة جديدة")}
+        {/* Logo & collapse */}
+        <div className="flex h-14 shrink-0 items-center justify-between px-3">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Scale className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="text-sm font-semibold tracking-tight text-foreground">
+                Qanoon<span className="text-primary">.ly</span>
+              </span>
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Scale className="h-4 w-4 text-primary-foreground" />
+            </div>
+          )}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
           >
-            <Plus className="h-5 w-5" />
+            {sidebarCollapsed ? (
+              <PanelLeft className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* New chat button */}
+        <div className="px-3 pb-2">
+          <Button
+            variant="outline"
+            onClick={handleNewChat}
+            className={cn(
+              "h-9 w-full justify-start gap-2 rounded-lg border-border/60 text-sm font-normal shadow-none",
+              sidebarCollapsed && "justify-center px-0"
+            )}
+          >
+            <SquarePen className="h-4 w-4 shrink-0" />
+            {!sidebarCollapsed && t("New Chat", "محادثة جديدة")}
           </Button>
         </div>
 
+        {/* Section label */}
+        {!sidebarCollapsed && (
+          <div className="px-4 pb-1.5 pt-3">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              {t("Conversations", "المحادثات")}
+            </span>
+          </div>
+        )}
+
         {/* Conversation list */}
-        <nav className="flex-1 overflow-y-auto p-2">
-          {conversations.length === 0 && (
-            <p className="px-2 py-8 text-center text-xs text-muted-foreground">
-              {t("No conversations yet.", "لا توجد محادثات بعد.")}
+        <nav className="flex-1 overflow-y-auto px-2 pb-2">
+          {conversations.length === 0 && !sidebarCollapsed && (
+            <p className="px-2 py-8 text-center text-xs text-muted-foreground/60">
+              {t("No conversations yet", "لا توجد محادثات بعد")}
             </p>
           )}
-          {conversations.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                setActiveId(c.id);
-                setSidebarOpen(false);
-              }}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm transition-colors",
-                activeId === c.id
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              <MessageSquare className="h-4 w-4 shrink-0" />
-              <span className="truncate">
-                {c.title || `${t("Conversation", "محادثة")} #${c.id}`}
-              </span>
-            </button>
-          ))}
+          <div className="space-y-0.5">
+            {conversations.map((c) => {
+              const isActive = activeId === c.id;
+              return (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "group/item relative flex items-center rounded-lg transition-colors",
+                    isActive
+                      ? "bg-primary/[0.08] text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  )}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveId(c.id);
+                      setSidebarOpen(false);
+                    }}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-2.5 py-2 text-start",
+                      sidebarCollapsed ? "justify-center px-2" : "px-2.5"
+                    )}
+                    title={
+                      sidebarCollapsed
+                        ? c.title ||
+                          `${t("Conversation", "محادثة")} #${c.id}`
+                        : undefined
+                    }
+                  >
+                    <MessageSquare
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        isActive ? "text-primary" : "opacity-50"
+                      )}
+                    />
+                    {!sidebarCollapsed && (
+                      <span className="block truncate text-[13px]">
+                        {c.title ||
+                          `${t("Conversation", "محادثة")} #${c.id}`}
+                      </span>
+                    )}
+                  </button>
+                  {!sidebarCollapsed && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteConversation(c.id);
+                      }}
+                      className="me-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-md opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover/item:opacity-100"
+                      title={t("Delete", "حذف")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </nav>
 
-        {/* Sidebar footer */}
-        <div className="border-t border-border p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <User className="h-4 w-4" />
+        {/* User section */}
+        <div className="border-t border-border/40 p-2">
+          <div
+            className={cn(
+              "flex items-center rounded-lg p-2 transition-colors hover:bg-muted/60",
+              sidebarCollapsed ? "justify-center" : "justify-between"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <User className="h-3.5 w-3.5" />
               </div>
-              <span className="max-w-[140px] truncate text-foreground">
-                {user?.username ?? user?.email}
-              </span>
+              {!sidebarCollapsed && (
+                <span className="max-w-[120px] truncate text-[13px] text-foreground">
+                  {user?.username ?? user?.email}
+                </span>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              title={t("Logout", "تسجيل الخروج")}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {!sidebarCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                title={t("Logout", "تسجيل الخروج")}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Main chat area */}
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 items-center gap-3 border-b border-border px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/40 px-4">
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <Scale className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium text-foreground">
-            {activeId
-              ? `${t("Conversation", "محادثة")} #${activeId}`
-              : t("New Conversation", "محادثة جديدة")}
-          </span>
-          <div className="ms-auto flex items-center gap-2">
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full",
-                connected ? "bg-green-500" : "bg-muted-foreground"
-              )}
-              title={connected ? "Connected" : "Disconnected"}
-            />
+            <Menu className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-muted-foreground/60" />
+            <span className="text-[13px] font-medium text-foreground">
+              {activeId
+                ? conversations.find((c) => c.id === activeId)?.title ||
+                  `${t("Conversation", "محادثة")} #${activeId}`
+                : t("New Conversation", "محادثة جديدة")}
+            </span>
+          </div>
+
+          <div className="ms-auto flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNewChat}
+              className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground"
+              title={t("New Chat", "محادثة جديدة")}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </header>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="mx-auto max-w-3xl space-y-6">
-            {messages.length === 0 && !streaming && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Scale className="h-12 w-12 text-muted-foreground/40" />
-                <h3 className="mt-4 text-lg font-medium text-foreground">
-                  {t(
-                    "Ask a legal question",
-                    "اطرح سؤالاً قانونياً"
-                  )}
-                </h3>
-                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                  {t(
-                    "Type your question below in Arabic or Libyan dialect and get answers grounded in Libyan law.",
-                    "اكتب سؤالك بالأسفل بالعربية أو باللهجة الليبية واحصل على إجابات مبنية على القانون الليبي."
-                  )}
-                </p>
+        {/* Messages area */}
+        <div className="flex-1 overflow-y-auto">
+          {showEmptyState ? (
+            <div className="flex h-full flex-col items-center justify-center px-5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <Scale className="h-6 w-6 text-primary" />
               </div>
-            )}
+              <h2 className="mt-4 text-lg font-semibold text-foreground">
+                {t("How can I help you today?", "كيف يمكنني مساعدتك اليوم؟")}
+              </h2>
+              <p className="mt-1.5 max-w-sm text-center text-[13px] leading-relaxed text-muted-foreground">
+                {t(
+                  "Ask a legal question in Arabic or Libyan dialect. I'll find the relevant Libyan law for you.",
+                  "اطرح سؤالاً قانونياً بالعربية أو باللهجة الليبية. سأجد لك القانون الليبي المناسب."
+                )}
+              </p>
 
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  "flex gap-3",
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {msg.role === "assistant" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
-                  )}
-                >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                </div>
-                {msg.role === "user" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <User className="h-4 w-4" />
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Streaming indicator */}
-            {streaming && (
-              <div className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Bot className="h-4 w-4" />
-                </div>
-                <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-sm leading-relaxed text-foreground">
-                  {streamingContent ? (
-                    <p className="whitespace-pre-wrap">{streamingContent}</p>
-                  ) : (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t("Thinking...", "جارٍ التفكير...")}
-                    </div>
-                  )}
-                </div>
-                {currentMessageId && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 self-center"
-                    onClick={() => cancelQuery(currentMessageId)}
-                    title={t("Cancel", "إلغاء")}
+              <div className="mt-6 grid w-full max-w-lg gap-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.text}
+                    onClick={() => handleSuggestion(s.text)}
+                    className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3.5 py-3 text-start text-[13px] text-foreground transition-all hover:border-primary/20 hover:bg-primary/[0.02]"
                   >
-                    <XCircle className="h-5 w-5 text-destructive" />
-                  </Button>
-                )}
+                    <s.icon className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                    <span>{s.text}</span>
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+              {messages.map((msg) => (
+                <ChatMessage key={msg.id} message={msg} />
+              ))}
 
-            <div ref={messagesEndRef} />
-          </div>
+              {streaming && (
+                <StreamingMessage
+                  content={streamingContent}
+                  thinking={!streamingContent}
+                  thinkingLabel={t("Thinking...", "جارٍ التفكير...")}
+                />
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
 
-        {/* Input */}
-        <div className="border-t border-border bg-background p-4">
-          <form
-            onSubmit={handleSend}
-            className="mx-auto flex max-w-3xl items-center gap-2"
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t(
-                "Type your legal question...",
-                "اكتب سؤالك القانوني..."
-              )}
-              disabled={sending}
-              className="flex-1"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!input.trim() || sending}
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </form>
-        </div>
+        {/* Input area */}
+        <ChatInput
+          value={input}
+          onChange={setInput}
+          onSend={handleSend}
+          onCancel={
+            currentMessageId
+              ? () => cancelQuery(currentMessageId)
+              : undefined
+          }
+          disabled={sending && !streaming}
+          sending={sending}
+          showCancel={streaming && !!currentMessageId}
+          placeholder={t(
+            "Type your legal question...",
+            "اكتب سؤالك القانوني..."
+          )}
+        />
       </main>
     </div>
   );
