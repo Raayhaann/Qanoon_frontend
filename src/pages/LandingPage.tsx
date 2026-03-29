@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   MessageSquare,
   Search,
@@ -13,7 +13,7 @@ import {
   Menu,
   X,
   Languages,
-  Sparkles,
+  Send,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -36,13 +36,8 @@ function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/60 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Scale className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">
-            Qanoon<span className="text-primary">.ly</span>
-          </span>
+        <Link to="/" className="flex items-center">
+          <img src="/full-logo.svg" alt="Qanoon.ly" className="h-8" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -66,9 +61,9 @@ function Navbar() {
             {lang === "en" ? "عربي" : "EN"}
           </button>
           <Button asChild size="sm" className="rounded-lg">
-            <a href="#try-it">
+            <Link to="/chat">
               {t("Ask a Legal Question", "اطرح سؤالاً قانونياً")}
-            </a>
+            </Link>
           </Button>
         </div>
 
@@ -103,9 +98,9 @@ function Navbar() {
                 {lang === "en" ? "عربي" : "EN"}
               </button>
               <Button asChild size="sm" className="flex-1 rounded-lg">
-                <a href="#try-it" onClick={() => setMobileOpen(false)}>
+                <Link to="/chat" onClick={() => setMobileOpen(false)}>
                   {t("Ask a Legal Question", "اطرح سؤالاً قانونياً")}
-                </a>
+                </Link>
               </Button>
             </div>
           </nav>
@@ -121,6 +116,14 @@ function Navbar() {
 
 function Hero() {
   const { t } = useLang();
+  const navigate = useNavigate();
+  const [heroInput, setHeroInput] = useState("");
+
+  function handleHeroSend() {
+    const text = heroInput.trim();
+    if (!text) return;
+    navigate("/chat", { state: { initialMessage: text } });
+  }
 
   return (
     <section className="relative overflow-hidden pb-20 pt-16 sm:pb-32 sm:pt-24 lg:pt-32">
@@ -138,10 +141,17 @@ function Hero() {
             backgroundSize: "64px 64px",
           }}
         />
+        {/* Small logo watermark */}
+        <img
+          src="/small-logo.svg"
+          alt=""
+          aria-hidden="true"
+          className="absolute right-[5%] top-100 h-[700px] w-[700px] opacity-[0.04] sm:top-24 lg:top-32"
+        />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5">
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="max-w-3xl text-left">
           <h1 className="animate-fade-up text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
             {t("AI-Driven", "وضوح قانوني")}
             <br />
@@ -150,19 +160,19 @@ function Hero() {
             </span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-xl animate-fade-up text-lg leading-relaxed text-muted-foreground [animation-delay:0.15s]">
+          <p className="mt-6 max-w-xl animate-fade-up text-lg leading-relaxed text-muted-foreground [animation-delay:0.15s]">
             {t(
               "Ask your legal question in Arabic or Libyan dialect and get the exact law and article that applies — grounded in verified Libyan legal texts.",
               "اطرح سؤالك القانوني بالعربية أو باللهجة الليبية واحصل على رقم القانون والمادة المناسبة — مبني على نصوص قانونية ليبية موثّقة."
             )}
           </p>
 
-          <div className="mt-10 flex animate-fade-up flex-col items-center justify-center gap-3 [animation-delay:0.3s] sm:flex-row">
+          <div className="mt-10 flex animate-fade-up flex-col items-start gap-3 [animation-delay:0.3s] sm:flex-row">
             <Button asChild size="lg" className="gap-2 rounded-xl px-7 text-base shadow-lg shadow-primary/20">
-              <a href="#try-it">
+              <Link to="/chat">
                 {t("Ask a Legal Question", "اطرح سؤالاً قانونياً")}
                 <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
             </Button>
             <Button
               asChild
@@ -177,35 +187,53 @@ function Hero() {
           </div>
         </div>
 
-        {/* Floating preview cards */}
+        {/* Mini chatbot widget */}
         <div className="relative mx-auto mt-20 max-w-2xl animate-fade-up [animation-delay:0.45s]">
-          <div className="rounded-2xl border border-border/60 bg-card p-1.5 shadow-2xl shadow-primary/[0.06]">
-            <div className="rounded-xl bg-muted/50 p-5">
+          <div className="rounded-2xl border border-border/60 bg-card shadow-2xl shadow-primary/[0.06]">
+            <div className="flex items-center gap-3 border-b border-border/40 px-5 py-3.5">
+              <img src="/small-logo.svg" alt="" className="h-7 w-7" />
+              <span className="text-sm font-semibold text-foreground">
+                {t("Ask Qanoon.ly", "اسأل قانون.ly")}
+              </span>
+              <div className="ms-auto flex h-2 w-2 rounded-full bg-accent" />
+            </div>
+
+            <div className="px-5 py-5">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Sparkles className="h-4 w-4 text-primary" />
+                  <Scale className="h-4 w-4 text-primary" />
                 </div>
-                <div className="space-y-2">
-                  <div className="h-3 w-48 rounded-full bg-foreground/10" />
-                  <div className="h-3 w-72 rounded-full bg-foreground/[0.06]" />
-                  <div className="h-3 w-56 rounded-full bg-foreground/[0.06]" />
-                </div>
-              </div>
-              <div className="mt-5 flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10">
-                  <Scale className="h-4 w-4 text-accent" />
-                </div>
-                <div className="flex-1 space-y-2 rounded-xl border border-accent/20 bg-accent/[0.04] p-3.5">
-                  <p className="text-xs font-medium text-accent">
-                    {t("Article 14 — Labor Law No. 12 of 2010", "المادة 14 — قانون العمل رقم 12 لسنة 2010")}
+                <div className="rounded-xl rounded-tl-none bg-muted/70 px-4 py-3">
+                  <p className="text-sm text-foreground">
+                    {t(
+                      "Hi! Ask me any legal question and I'll find the relevant Libyan law for you.",
+                      "مرحباً! اطرح أي سؤال قانوني وسأجد لك القانون الليبي المناسب."
+                    )}
                   </p>
-                  <div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
-                  <div className="h-2.5 w-3/4 rounded-full bg-foreground/[0.05]" />
                 </div>
               </div>
             </div>
+
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleHeroSend(); }}
+              className="flex items-center gap-2 border-t border-border/40 px-4 py-3"
+            >
+              <input
+                type="text"
+                value={heroInput}
+                onChange={(e) => setHeroInput(e.target.value)}
+                placeholder={t("Type your legal question...", "اكتب سؤالك القانوني...")}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!heroInput.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </form>
           </div>
-          {/* Glow under the card */}
           <div className="absolute -bottom-6 left-1/2 h-12 w-3/4 -translate-x-1/2 rounded-full bg-primary/[0.08] blur-2xl" />
         </div>
       </div>
@@ -521,21 +549,14 @@ function Footer() {
   return (
     <footer className="border-t border-border/50 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 sm:flex-row sm:justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-            <Scale className="h-3.5 w-3.5 text-primary-foreground" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold text-foreground">
-              Qanoon<span className="text-primary">.ly</span>
-            </span>
-            <span className="text-[11px] leading-tight text-muted-foreground">
-              {t(
-                "AI-powered Libyan legal assistant",
-                "مساعد قانوني ليبي مدعوم بالذكاء الاصطناعي"
-              )}
-            </span>
-          </div>
+        <div className="flex flex-col items-start gap-1">
+          <img src="/full-logo.svg" alt="Qanoon.ly" className="h-7" />
+          <span className="text-[11px] leading-tight text-muted-foreground">
+            {t(
+              "AI-powered Libyan legal assistant",
+              "مساعد قانوني ليبي مدعوم بالذكاء الاصطناعي"
+            )}
+          </span>
         </div>
         <p className="text-xs text-muted-foreground">
           &copy; {new Date().getFullYear()} Qanoon.ly.{" "}

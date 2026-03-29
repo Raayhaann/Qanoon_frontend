@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus,
   LogOut,
@@ -36,6 +36,7 @@ export default function ChatPage() {
   const { user, logout } = useAuth();
   const { t } = useLang();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -46,6 +47,7 @@ export default function ChatPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const skipNextFetch = useRef(false);
+  const pendingInitialMsg = useRef<string | null>(null);
 
   const {
     connected,
@@ -61,6 +63,15 @@ export default function ChatPage() {
     listConversations()
       .then(setConversations)
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const msg = (location.state as { initialMessage?: string })?.initialMessage;
+    if (msg && typeof msg === "string") {
+      pendingInitialMsg.current = msg;
+      setInput(msg);
+      window.history.replaceState({}, "");
+    }
   }, []);
 
   useEffect(() => {
@@ -80,6 +91,13 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingContent]);
+
+  useEffect(() => {
+    if (pendingInitialMsg.current && input === pendingInitialMsg.current) {
+      pendingInitialMsg.current = null;
+      handleSend();
+    }
+  }, [input]);
 
   useEffect(() => {
     onStreamEnd.current = (data: StreamEvent) => {
