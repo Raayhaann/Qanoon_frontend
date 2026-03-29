@@ -115,8 +115,9 @@ function Navbar() {
 /* ------------------------------------------------------------------ */
 
 function Hero() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const navigate = useNavigate();
+  const isAr = lang === "ar";
   const [heroInput, setHeroInput] = useState("");
 
   function handleHeroSend() {
@@ -146,28 +147,28 @@ function Hero() {
           src="/small-logo.svg"
           alt=""
           aria-hidden="true"
-          className="absolute right-[5%] top-100 h-[700px] w-[700px] opacity-[0.04] sm:top-24 lg:top-32"
+          className={`absolute top-0 h-[700px] w-[700px] opacity-[0.04] ${isAr ? "left-[5%]" : "right-[5%]"}`}
         />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5">
-        <div className="max-w-3xl text-left">
-          <h1 className="animate-fade-up text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-            {t("AI-Driven", "وضوح قانوني")}
+        <div className={`max-w-3xl ${isAr ? "ms-auto text-right" : "text-left"}`}>
+          <h1 className="animate-fade-up text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            {t("Your Legal Questions,", "أسئلتك القانونية،")}
             <br />
-            <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
-              {t("Legal Clarity", "بالذكاء الاصطناعي")}
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {t("Answered Instantly.", "إجابات فورية.")}
             </span>
           </h1>
 
-          <p className="mt-6 max-w-xl animate-fade-up text-lg leading-relaxed text-muted-foreground [animation-delay:0.15s]">
+          <p className="mt-5 max-w-lg animate-fade-up text-base leading-relaxed text-muted-foreground [animation-delay:0.15s]">
             {t(
-              "Ask your legal question in Arabic or Libyan dialect and get the exact law and article that applies — grounded in verified Libyan legal texts.",
-              "اطرح سؤالك القانوني بالعربية أو باللهجة الليبية واحصل على رقم القانون والمادة المناسبة — مبني على نصوص قانونية ليبية موثّقة."
+              "Ask in Arabic or Libyan dialect — get the exact law and article that applies, grounded in verified legal texts.",
+              "اسأل بالعربية أو باللهجة الليبية — واحصل على القانون والمادة المناسبة من نصوص قانونية موثّقة."
             )}
           </p>
 
-          <div className="mt-10 flex animate-fade-up flex-col items-start gap-3 [animation-delay:0.3s] sm:flex-row">
+          <div className={`mt-10 flex animate-fade-up flex-col gap-3 [animation-delay:0.3s] sm:flex-row ${isAr ? "items-end" : "items-start"}`}>
             <Button asChild size="lg" className="gap-2 rounded-xl px-7 text-base shadow-lg shadow-primary/20">
               <Link to="/chat">
                 {t("Ask a Legal Question", "اطرح سؤالاً قانونياً")}
