@@ -492,47 +492,45 @@ function ChatbotCTA() {
   const { t } = useLang();
 
   return (
-    <section id="try-it" className="relative py-12 sm:py-16">
+    <section id="try-it" className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="relative overflow-hidden rounded-3xl bg-foreground px-6 py-14 text-center sm:px-12 sm:py-16">
-          {/* Decorative elements */}
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-20 ltr:-right-20 rtl:-left-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-            <div className="absolute -bottom-20 ltr:-left-20 rtl:-right-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
-            <div
-              className="absolute inset-0 opacity-[0.03]"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, white 1px, transparent 1px)",
-                backgroundSize: "24px 24px",
-              }}
-            />
-          </div>
+        <div className="relative overflow-hidden rounded-3xl bg-primary px-8 py-16 opacity-[0.85] sm:px-14 sm:py-20">
+          {/* Logo watermark */}
+          <img
+            src="/small-logo.svg"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-10 -right-10 h-72 w-72 opacity-[0.05] invert"
+          />
 
-          <div className="relative">
-            <h2 className="text-3xl font-bold tracking-tight text-background sm:text-4xl lg:text-5xl">
-              {t("Know Your Rights.", "اعرف حقوقك.")}
-              <br />
-              {t("Ask Now.", "اسأل الآن.")}
-            </h2>
-            <p className="mx-auto mt-5 max-w-md text-base text-background/60">
-              {t(
-                "Powered by AI. Grounded in Libyan law.",
-                "مدعوم بالذكاء الاصطناعي. مبني على القانون الليبي."
-              )}
-            </p>
-            <div className="mt-10">
-              <Button
-                asChild
-                size="lg"
-                className="gap-2 rounded-xl bg-background px-8 text-base font-semibold text-foreground shadow-xl hover:bg-background/90"
-              >
-                <Link to="/chat">
-                  {t("Start a Conversation", "ابدأ محادثة")}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+          <div className="relative flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/60">
+                {t("Ready to start?", "هل أنت مستعد؟")}
+              </p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+                {t("Get the law that applies", "احصل على القانون المناسب")}
+                <br />
+                {t("to your situation.", "لوضعك.")}
+              </h2>
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-primary-foreground/70">
+                {t(
+                  "Powered by AI. Grounded in verified Libyan legal texts.",
+                  "مدعوم بالذكاء الاصطناعي. مبني على نصوص قانونية ليبية موثّقة."
+                )}
+              </p>
             </div>
+
+            <Button
+              asChild
+              size="lg"
+              className="shrink-0 gap-2 rounded-xl bg-background px-8 text-base font-semibold text-foreground shadow-xl hover:bg-background/90"
+            >
+              <Link to="/chat">
+                {t("Start a Conversation", "ابدأ محادثة")}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

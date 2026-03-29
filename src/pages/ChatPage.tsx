@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   Plus,
   LogOut,
   MessageSquare,
   Menu,
-  Scale,
   User,
   Trash2,
   ShieldAlert,
@@ -201,6 +200,7 @@ export default function ChatPage() {
 
   function handleSuggestion(text: string) {
     setInput(text);
+    pendingInitialMsg.current = text;
   }
 
   async function handleLogout() {
@@ -247,7 +247,7 @@ export default function ChatPage() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 start-0 z-40 flex flex-col border-e border-border/50 bg-card transition-all duration-200 md:relative md:translate-x-0",
+          "fixed inset-y-0 start-0 z-40 flex flex-col border-e border-border/50 bg-card opacity-[0.85] transition-all duration-200 md:relative md:translate-x-0",
           sidebarCollapsed ? "md:w-16" : "md:w-64",
           sidebarOpen
             ? "w-64 translate-x-0"
@@ -257,19 +257,14 @@ export default function ChatPage() {
         {/* Logo & collapse */}
         <div className="flex h-14 shrink-0 items-center justify-between px-3">
           {!sidebarCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Scale className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="text-sm font-semibold tracking-tight text-foreground">
-                Qanoon<span className="text-primary">.ly</span>
-              </span>
-            </div>
+            <Link to="/" className="flex items-center">
+              <img src="/full-logo.svg" alt="Qanoon.ly" className="h-7" />
+            </Link>
           )}
           {sidebarCollapsed && (
-            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Scale className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <Link to="/" className="mx-auto flex items-center">
+              <img src="/small-logo.svg" alt="Qanoon.ly" className="h-8 w-8" />
+            </Link>
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -295,7 +290,7 @@ export default function ChatPage() {
             variant="outline"
             onClick={handleNewChat}
             className={cn(
-              "h-9 w-full justify-start gap-2 rounded-lg border-border/60 text-sm font-normal shadow-none",
+              "h-9 w-full justify-start gap-2 rounded-lg border-border/60 text-sm font-normal shadow-none hover:bg-muted/60 hover:text-foreground",
               sidebarCollapsed && "justify-center px-0"
             )}
           >
@@ -403,7 +398,7 @@ export default function ChatPage() {
                 variant="ghost"
                 size="icon"
                 onClick={handleLogout}
-                className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 title={t("Logout", "تسجيل الخروج")}
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -450,9 +445,7 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto">
           {showEmptyState ? (
             <div className="flex h-full flex-col items-center justify-center px-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <Scale className="h-6 w-6 text-primary" />
-              </div>
+              <img src="/small-logo.svg" alt="Qanoon.ly" className="h-12 w-12" />
               <h2 className="mt-4 text-lg font-semibold text-foreground">
                 {t("How can I help you today?", "كيف يمكنني مساعدتك اليوم؟")}
               </h2>

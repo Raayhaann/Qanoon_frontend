@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 
@@ -50,14 +50,11 @@ export default function LoginPage() {
   }
 
   const loginForm = (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-primary/[0.05] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 text-center">
-          <Link to="/" className="mx-auto mb-2 inline-flex items-center gap-2">
-            <Scale className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold text-primary">
-              Qanoon<span className="text-foreground">.ly</span>
-            </span>
+          <Link to="/" className="mx-auto mb-2 inline-flex items-center">
+            <img src="/full-logo.svg" alt="Qanoon.ly" className="h-8" />
           </Link>
           <CardTitle className="text-2xl">
             {t("Sign In", "تسجيل الدخول")}
