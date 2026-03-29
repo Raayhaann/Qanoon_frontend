@@ -46,8 +46,11 @@ export function useChat(): UseChatReturn {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat/`);
+    const apiOrigin = import.meta.env.VITE_API_ORIGIN as string | undefined;
+    const wsUrl = apiOrigin
+      ? apiOrigin.replace(/\/$/, "").replace(/^http/, "ws") + "/ws/chat/"
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/chat/`;
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       reconnectAttempts.current = 0;

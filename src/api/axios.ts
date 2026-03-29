@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const origin = import.meta.env.VITE_API_ORIGIN as string | undefined;
+const apiBase = origin ? origin.replace(/\/$/, "") + "/api" : "/api";
+
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: apiBase,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -60,7 +63,7 @@ api.interceptors.response.use(
 
       try {
         const { data } = await axios.post(
-          "/api/auth/token/refresh/cookie/",
+          `${apiBase}/auth/token/refresh/cookie/`,
           {},
           { withCredentials: true }
         );
