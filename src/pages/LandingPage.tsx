@@ -152,7 +152,7 @@ function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5">
-        <div className={`max-w-3xl ${isAr ? "ms-auto text-right" : "text-left"}`}>
+        <div className={isAr ? "text-right" : "max-w-3xl text-left"}>
           <h1 className="animate-fade-up text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             {t("Your Legal Questions,", "أسئلتك القانونية،")}
             <br />
