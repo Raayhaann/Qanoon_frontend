@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import type { LawSourceChunk } from "@/api/chat";
 
 export interface StreamEvent {
   type: string;
@@ -9,7 +10,7 @@ export interface StreamEvent {
   output?: string;
   final_data?: {
     response: string;
-    source: string | null;
+    source: LawSourceChunk[] | string | null;
     search_strategy: string | null;
     conversation_id: string;
     response_time: number;

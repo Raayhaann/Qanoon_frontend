@@ -174,7 +174,15 @@ export default function ChatPage() {
           setActiveId(conv.id);
         }
         const resp = await sendMessage(convId, text);
-        setMessages((prev) => [...prev, resp.assistant_response]);
+        const assistant = resp.assistant_response;
+        const assistantWithSources: Message = {
+          ...assistant,
+          metadata: {
+            ...assistant.metadata,
+            ...(resp.source !== undefined ? { source: resp.source } : {}),
+          },
+        };
+        setMessages((prev) => [...prev, assistantWithSources]);
       } catch {
         setMessages((prev) => [
           ...prev,

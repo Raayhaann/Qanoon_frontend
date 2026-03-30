@@ -1,5 +1,56 @@
 import api from "./axios";
 
+/** One retrieved law chunk from the backend workflow (matches `parse_retrieved_laws_to_sources`). */
+export interface LawSourceChunk {
+  search_query: string | null;
+  chunk_index: number;
+  law_name: string;
+  status: string;
+  link: string;
+  text: string;
+}
+
+export type MessageSourcesDisplay =
+  | { mode: "chunks"; chunks: LawSourceChunk[] }
+  | { mode: "raw"; text: string };
+
+/**
+ * Normalize `metadata.source` or API `source` for UI: structured chunks, legacy string, or none.
+ */
+export function getMessageSourcesDisplay(
+  source: unknown
+): MessageSourcesDisplay | null {
+  if (source === undefined || source === null) return null;
+  if (typeof source === "string") {
+    const t = source.trim();
+    return t ? { mode: "raw", text: t } : null;
+  }
+  if (!Array.isArray(source) || source.length === 0) return null;
+  const chunks: LawSourceChunk[] = [];
+  for (const item of source) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const sq = o.search_query;
+    chunks.push({
+      search_query:
+        sq === null || sq === undefined
+          ? null
+          : typeof sq === "string"
+            ? sq
+            : String(sq),
+      chunk_index:
+        typeof o.chunk_index === "number"
+          ? o.chunk_index
+          : Number(o.chunk_index) || 0,
+      law_name: String(o.law_name ?? ""),
+      status: String(o.status ?? ""),
+      link: String(o.link ?? ""),
+      text: String(o.text ?? ""),
+    });
+  }
+  return chunks.length ? { mode: "chunks", chunks } : null;
+}
+
 export interface Conversation {
   id: number;
   title: string;
@@ -22,7 +73,7 @@ export interface Message {
 interface SendMessageResponse {
   message: Message;
   assistant_response: Message;
-  source?: string;
+  source?: LawSourceChunk[] | string;
   search_strategy?: string;
 }
 
