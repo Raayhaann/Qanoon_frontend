@@ -348,8 +348,7 @@ export default function ChatPage() {
                     )}
                     title={
                       sidebarCollapsed
-                        ? c.title ||
-                          `${t("Conversation", "محادثة")} #${c.id}`
+                        ? c.title || t("Conversation", "محادثة")
                         : undefined
                     }
                   >
@@ -361,8 +360,7 @@ export default function ChatPage() {
                     />
                     {!sidebarCollapsed && (
                       <span className="block truncate text-[13px]">
-                        {c.title ||
-                          `${t("Conversation", "محادثة")} #${c.id}`}
+                        {c.title || t("Conversation", "محادثة")}
                       </span>
                     )}
                   </button>
@@ -432,7 +430,7 @@ export default function ChatPage() {
             <span className="text-[13px] font-medium text-foreground">
               {activeId
                 ? conversations.find((c) => c.id === activeId)?.title ||
-                  `${t("Conversation", "محادثة")} #${activeId}`
+                  t("Conversation", "محادثة")
                 : t("New Conversation", "محادثة جديدة")}
             </span>
           </div>
