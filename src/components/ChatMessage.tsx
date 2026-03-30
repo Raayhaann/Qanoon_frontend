@@ -39,15 +39,16 @@ function statusVariant(
   return "neutral";
 }
 
+/** Soft light-mode-only badges (no dark fills) */
 const STATUS_CLASSES: Record<string, string> = {
   active:
-    "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-800",
+    "bg-emerald-50/90 text-emerald-800 ring-1 ring-emerald-200/80",
   cancelled:
-    "bg-red-50 text-red-600 ring-red-200 dark:bg-red-950 dark:text-red-300 dark:ring-red-800",
+    "bg-red-50/90 text-red-700 ring-1 ring-red-200/80",
   amended:
-    "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-800",
+    "bg-amber-50/90 text-amber-800 ring-1 ring-amber-200/80",
   neutral:
-    "bg-muted text-muted-foreground ring-border",
+    "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80",
 };
 
 /* ─── single source card ───────────────────────────────────────── */
@@ -64,11 +65,11 @@ function SourceCard({
   const variant = statusVariant(chunk.status);
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-sm transition-shadow hover:border-zinc-300/90 hover:shadow-md">
       {/* card header */}
       <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
         {/* index badge */}
-        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[10px] font-bold text-primary">
           {index + 1}
         </span>
 
@@ -80,7 +81,7 @@ function SourceCard({
           {chunk.status ? (
             <span
               className={cn(
-                "mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                "mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
                 STATUS_CLASSES[variant]
               )}
             >
@@ -132,7 +133,7 @@ function SourceCard({
             href={chunk.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-primary/25 hover:bg-primary/[0.06] hover:text-primary"
           >
             <ExternalLink className="h-3 w-3 shrink-0" />
             {parseDomain(chunk.link)}
@@ -169,25 +170,25 @@ function AssistantSources({ display }: { display: MessageSourcesDisplay }) {
   }
 
   return (
-    <div className="mt-3 text-start">
-      {/* toggle button — pill style */}
+    <div className="text-start">
+      {/* toggle button — pill style (light badges only) */}
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all",
           open
-            ? "border-primary/30 bg-primary/8 text-primary"
-            : "border-border/70 bg-background text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
+            ? "border-primary/25 bg-primary/[0.06] text-primary"
+            : "border-zinc-200/90 bg-white text-zinc-600 hover:border-primary/20 hover:bg-primary/[0.04] hover:text-zinc-800"
         )}
       >
         <BookOpen className="h-3.5 w-3.5 shrink-0" />
         {t("Sources", "المصادر")}
         <span
           className={cn(
-            "flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+            "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold",
             open
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
+              ? "bg-primary/15 text-primary"
+              : "bg-zinc-100 text-zinc-600"
           )}
         >
           {count}
@@ -202,9 +203,9 @@ function AssistantSources({ display }: { display: MessageSourcesDisplay }) {
 
       {/* expandable panel */}
       {open ? (
-        <div className="sources-panel mt-2.5 overflow-hidden rounded-2xl border border-border/50 bg-muted/20 p-3">
+        <div className="sources-panel mt-2.5 overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-3">
           {display.mode === "raw" ? (
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-muted/60 p-3 text-[11px] leading-relaxed text-muted-foreground">
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-zinc-200/80 bg-white p-3 text-[11px] leading-relaxed text-zinc-600">
               {display.text}
             </pre>
           ) : (
@@ -224,8 +225,7 @@ function AssistantSources({ display }: { display: MessageSourcesDisplay }) {
                     </div>
                   ) : null}
 
-                  {/* cards grid */}
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2.5">
                     {group.items.map((chunk) => (
                       <SourceCard
                         key={`${chunk.search_query ?? ""}-${chunk.chunk_index}-${chunk.globalIdx}`}
@@ -279,28 +279,26 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
       </div>
 
-      <div
-        className={`max-w-[78%] rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted/70 text-foreground"
-        }`}
-      >
-        {isUser ? (
+      {isUser ? (
+        <div className="max-w-[78%] rounded-xl bg-primary px-3.5 py-2.5 text-[13px] leading-relaxed text-primary-foreground">
           <p className="whitespace-pre-wrap">{message.content}</p>
-        ) : (
-          <>
+        </div>
+      ) : (
+        <div className="flex min-w-0 max-w-[78%] flex-col items-stretch gap-0">
+          <div className="w-fit max-w-full rounded-xl bg-muted/70 px-3.5 py-2.5 text-[13px] leading-relaxed text-foreground">
             <div className="prose-chat">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {message.content}
               </ReactMarkdown>
             </div>
-            {sourceDisplay ? (
+          </div>
+          {sourceDisplay ? (
+            <div className="mt-2.5 w-full min-w-0">
               <AssistantSources display={sourceDisplay} />
-            ) : null}
-          </>
-        )}
-      </div>
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
