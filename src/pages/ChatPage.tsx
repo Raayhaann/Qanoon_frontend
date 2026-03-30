@@ -122,8 +122,8 @@ export default function ChatPage() {
 
         if (!activeId && convId) {
           setActiveId(convId);
-          listConversations().then(setConversations).catch(() => {});
         }
+        listConversations().then(setConversations).catch(() => {});
       }
       setSending(false);
     };
@@ -183,6 +183,7 @@ export default function ChatPage() {
           },
         };
         setMessages((prev) => [...prev, assistantWithSources]);
+        listConversations().then(setConversations).catch(() => {});
       } catch {
         setMessages((prev) => [
           ...prev,
