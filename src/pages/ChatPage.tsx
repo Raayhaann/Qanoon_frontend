@@ -139,15 +139,19 @@ export default function ChatPage() {
   }
 
   async function handleDeleteConversation(id: number) {
-    try {
-      await deleteConversation(id);
-    } catch {
-      return;
-    }
+    // Optimistic update — remove immediately so UI feels instant
+    const previous = conversations;
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (activeId === id) {
       setActiveId(null);
       setMessages([]);
+    }
+    try {
+      await deleteConversation(id);
+    } catch (err) {
+      // Restore list on failure
+      console.error("Failed to delete conversation:", err);
+      setConversations(previous);
     }
   }
 
