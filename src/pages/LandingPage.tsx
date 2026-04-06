@@ -15,7 +15,7 @@ import {
   Languages,
   Send,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLang } from "@/context/LangContext";
 
@@ -26,6 +26,13 @@ import { useLang } from "@/context/LangContext";
 function Navbar() {
   const { lang, toggleLang, t } = useLang();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const navLinks = [
     { href: "#how-it-works", label: t("How It Works", "كيف يعمل") },
@@ -34,7 +41,13 @@ function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/60 backdrop-blur-xl">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+        scrolled
+          ? "bg-background/80 backdrop-blur-xl shadow-sm border-b border-border/40"
+          : "bg-transparent backdrop-blur-none"
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <Link to="/" className="flex items-center">
           <img src="/full-logo.svg" alt="Qanoon.ly" className="h-8" />
@@ -127,7 +140,7 @@ function Hero() {
   }
 
   return (
-    <section className="relative overflow-hidden pb-20 pt-16 sm:pb-32 sm:pt-24 lg:pt-32">
+    <section className="relative overflow-hidden pb-20 pt-28 sm:pb-32 sm:pt-36 lg:pt-40">
       {/* Background decoration */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/[0.04] blur-3xl" />
@@ -147,7 +160,7 @@ function Hero() {
           src="/small-logo.svg"
           alt=""
           aria-hidden="true"
-          className={`absolute top-0 h-[700px] w-[700px] opacity-[0.04] ${isAr ? "left-[5%]" : "right-[5%]"}`}
+          className={`absolute top-0 h-[700px] w-[700px] opacity-[0.03] ${isAr ? "left-[5%]" : "right-[5%]"}`}
         />
       </div>
 

@@ -24,6 +24,7 @@ import { useChat, type StreamEvent } from "@/hooks/useChat";
 import {
   listConversations,
   createConversation,
+  deleteConversation,
   listMessages,
   sendMessage,
   type Conversation,
@@ -55,6 +56,7 @@ export default function ChatPage() {
     currentMessageId,
     sendQuery,
     cancelQuery,
+    listMessagesWs,
     onStreamEnd,
   } = useChat();
 
@@ -79,13 +81,14 @@ export default function ChatPage() {
       return;
     }
     if (activeId) {
-      listMessages(activeId)
-        .then(setMessages)
-        .catch(() => {});
+      const load = connected
+        ? listMessagesWs(activeId).catch(() => listMessages(activeId))
+        : listMessages(activeId);
+      load.then(setMessages).catch(() => {});
     } else {
       setMessages([]);
     }
-  }, [activeId]);
+  }, [activeId, connected, listMessagesWs]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,7 +138,12 @@ export default function ChatPage() {
     setSidebarOpen(false);
   }
 
-  function handleDeleteConversation(id: number) {
+  async function handleDeleteConversation(id: number) {
+    try {
+      await deleteConversation(id);
+    } catch {
+      return;
+    }
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (activeId === id) {
       setActiveId(null);
@@ -213,7 +221,11 @@ export default function ChatPage() {
   }
 
   async function handleLogout() {
-    await logout();
+    try {
+      await logout();
+    } catch {
+      // AuthContext already clears state; still redirect
+    }
     navigate("/login", { replace: true });
   }
 
@@ -256,15 +268,15 @@ export default function ChatPage() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 start-0 z-40 flex flex-col border-e border-border/50 bg-card opacity-[0.85] transition-all duration-200 md:relative md:translate-x-0",
+          "fixed inset-y-0 start-0 z-40 flex flex-col border-e border-border/40 bg-card/95 backdrop-blur-sm transition-all duration-300 md:relative md:translate-x-0",
           sidebarCollapsed ? "md:w-16" : "md:w-64",
           sidebarOpen
-            ? "w-64 translate-x-0"
+            ? "w-64 translate-x-0 shadow-2xl"
             : "max-md:ltr:-translate-x-full max-md:rtl:translate-x-full"
         )}
       >
         {/* Logo & collapse */}
-        <div className="flex h-14 shrink-0 items-center justify-between px-3">
+        <div className="flex h-14 shrink-0 items-center justify-between px-3 border-b border-border/30">
           {!sidebarCollapsed && (
             <Link to="/" className="flex items-center">
               <img src="/full-logo.svg" alt="Qanoon.ly" className="h-7" />
@@ -277,7 +289,7 @@ export default function ChatPage() {
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
+            className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary md:flex"
           >
             {sidebarCollapsed ? (
               <PanelLeft className="h-4 w-4" />
@@ -294,12 +306,12 @@ export default function ChatPage() {
         </div>
 
         {/* New chat button */}
-        <div className="px-3 pb-2">
+        <div className="px-3 py-3">
           <Button
             variant="outline"
             onClick={handleNewChat}
             className={cn(
-              "h-9 w-full justify-start gap-2 rounded-lg border-border/60 text-sm font-normal shadow-none hover:bg-muted/60 hover:text-foreground",
+              "h-9 w-full justify-start gap-2 rounded-lg border-primary/20 bg-primary/5 text-sm font-medium text-primary shadow-none transition-all hover:bg-primary/10 hover:border-primary/30",
               sidebarCollapsed && "justify-center px-0"
             )}
           >
@@ -310,8 +322,8 @@ export default function ChatPage() {
 
         {/* Section label */}
         {!sidebarCollapsed && (
-          <div className="px-4 pb-1.5 pt-3">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+          <div className="px-4 pb-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
               {t("Conversations", "المحادثات")}
             </span>
           </div>
@@ -320,9 +332,12 @@ export default function ChatPage() {
         {/* Conversation list */}
         <nav className="flex-1 overflow-y-auto px-2 pb-2">
           {conversations.length === 0 && !sidebarCollapsed && (
-            <p className="px-2 py-8 text-center text-xs text-muted-foreground/60">
-              {t("No conversations yet", "لا توجد محادثات بعد")}
-            </p>
+            <div className="flex flex-col items-center gap-2 px-2 py-10 text-center">
+              <MessageSquare className="h-7 w-7 text-muted-foreground/30" />
+              <p className="text-xs text-muted-foreground/50">
+                {t("No conversations yet", "لا توجد محادثات بعد")}
+              </p>
+            </div>
           )}
           <div className="space-y-0.5">
             {conversations.map((c) => {
@@ -331,10 +346,10 @@ export default function ChatPage() {
                 <div
                   key={c.id}
                   className={cn(
-                    "group/item relative flex items-center rounded-lg transition-colors",
+                    "group/item relative flex items-center rounded-lg transition-all duration-150",
                     isActive
-                      ? "bg-primary/[0.08] text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      ? "bg-primary/10 text-foreground ring-1 ring-primary/15"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   )}
                 >
                   <button
@@ -354,12 +369,12 @@ export default function ChatPage() {
                   >
                     <MessageSquare
                       className={cn(
-                        "h-4 w-4 shrink-0",
-                        isActive ? "text-primary" : "opacity-50"
+                        "h-3.5 w-3.5 shrink-0",
+                        isActive ? "text-primary" : "opacity-40"
                       )}
                     />
                     {!sidebarCollapsed && (
-                      <span className="block truncate text-[13px]">
+                      <span className="block truncate text-[12.5px]">
                         {c.title || t("Conversation", "محادثة")}
                       </span>
                     )}
@@ -383,21 +398,23 @@ export default function ChatPage() {
         </nav>
 
         {/* User section */}
-        <div className="border-t border-border/40 p-2">
+        <div className="border-t border-border/30 p-2">
           <div
             className={cn(
-              "flex items-center rounded-lg p-2 transition-colors hover:bg-muted/60",
-              sidebarCollapsed ? "justify-center" : "justify-between"
+              "flex items-center rounded-lg p-2 transition-colors",
+              sidebarCollapsed ? "justify-center" : "justify-between gap-2"
             )}
           >
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/20">
                 <User className="h-3.5 w-3.5" />
               </div>
               {!sidebarCollapsed && (
-                <span className="max-w-[120px] truncate text-[13px] text-foreground">
-                  {user?.username ?? user?.email}
-                </span>
+                <div className="min-w-0">
+                  <span className="block truncate text-[12.5px] font-medium text-foreground">
+                    {user?.username ?? user?.email}
+                  </span>
+                </div>
               )}
             </div>
             {!sidebarCollapsed && (
@@ -405,7 +422,7 @@ export default function ChatPage() {
                 variant="ghost"
                 size="icon"
                 onClick={handleLogout}
-                className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                className="h-7 w-7 shrink-0 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 title={t("Logout", "تسجيل الخروج")}
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -416,9 +433,9 @@ export default function ChatPage() {
       </aside>
 
       {/* Main chat area */}
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden bg-background">
         {/* Top bar */}
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/40 px-4">
+        <header className="flex h-13 shrink-0 items-center gap-2 border-b border-border/30 bg-card/60 px-4 backdrop-blur-sm">
           <button
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
             onClick={() => setSidebarOpen(true)}
@@ -426,8 +443,8 @@ export default function ChatPage() {
             <Menu className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-muted-foreground/60" />
-            <span className="text-[13px] font-medium text-foreground">
+            <MessageSquare className="h-3.5 w-3.5 text-primary/50" />
+            <span className="text-[13px] font-medium text-foreground/90">
               {activeId
                 ? conversations.find((c) => c.id === activeId)?.title ||
                   t("Conversation", "محادثة")
@@ -440,7 +457,7 @@ export default function ChatPage() {
               variant="ghost"
               size="icon"
               onClick={handleNewChat}
-              className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary"
               title={t("New Chat", "محادثة جديدة")}
             >
               <Plus className="h-4 w-4" />
@@ -451,33 +468,36 @@ export default function ChatPage() {
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto">
           {showEmptyState ? (
-            <div className="flex h-full flex-col items-center justify-center px-5">
-              <img src="/small-logo.svg" alt="Qanoon.ly" className="h-12 w-12" />
-              <h2 className="mt-4 text-lg font-semibold text-foreground">
+            <div className="flex h-full flex-col items-center justify-center px-5 py-10">
+              <div className="relative mb-2">
+                <div className="absolute inset-0 rounded-full bg-primary/10 blur-2xl scale-150" />
+                <img src="/small-logo.svg" alt="Qanoon.ly" className="relative h-14 w-14" />
+              </div>
+              <h2 className="mt-5 text-xl font-semibold tracking-tight text-foreground">
                 {t("How can I help you today?", "كيف يمكنني مساعدتك اليوم؟")}
               </h2>
-              <p className="mt-1.5 max-w-sm text-center text-[13px] leading-relaxed text-muted-foreground">
+              <p className="mt-2 max-w-sm text-center text-[13px] leading-relaxed text-muted-foreground">
                 {t(
                   "Ask a legal question in Arabic or Libyan dialect. I'll find the relevant Libyan law for you.",
                   "اطرح سؤالاً قانونياً بالعربية أو باللهجة الليبية. سأجد لك القانون الليبي المناسب."
                 )}
               </p>
 
-              <div className="mt-6 grid w-full max-w-lg gap-2">
+              <div className="mt-7 grid w-full max-w-lg gap-2">
                 {suggestions.map((s) => (
                   <button
                     key={s.text}
                     onClick={() => handleSuggestion(s.text)}
-                    className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3.5 py-3 text-start text-[13px] text-foreground transition-all hover:border-primary/20 hover:bg-primary/[0.02]"
+                    className="flex items-center gap-3 rounded-xl border border-border/50 bg-card px-4 py-3.5 text-start text-[13px] text-foreground shadow-sm transition-all hover:border-primary/25 hover:bg-primary/[0.03] hover:shadow-md"
                   >
-                    <s.icon className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                    <s.icon className="h-4 w-4 shrink-0 text-primary/50" />
                     <span>{s.text}</span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+            <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} />
               ))}

@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import type { LawSourceChunk } from "@/api/chat";
+import type { LawSourceChunk, Message } from "@/api/chat";
 
 export interface StreamEvent {
   type: string;
@@ -18,6 +18,12 @@ export interface StreamEvent {
   message?: string;
 }
 
+type RpcEntry = {
+  resolve: (value: Message[]) => void;
+  reject: (reason: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+};
+
 interface UseChatReturn {
   connected: boolean;
   streaming: boolean;
@@ -25,13 +31,28 @@ interface UseChatReturn {
   currentMessageId: string | null;
   sendQuery: (query: string, conversationId?: number) => void;
   cancelQuery: (messageId: string) => void;
+  listMessagesWs: (conversationId: number) => Promise<Message[]>;
   onStreamEnd: React.MutableRefObject<
     ((data: StreamEvent) => void) | null
   >;
 }
 
+const RPC_TIMEOUT_MS = 30_000;
+
+function rejectAllRpc(
+  pending: Map<string, RpcEntry>,
+  reason: Error
+): void {
+  pending.forEach(({ reject, timeout }) => {
+    clearTimeout(timeout);
+    reject(reason);
+  });
+  pending.clear();
+}
+
 export function useChat(): UseChatReturn {
   const wsRef = useRef<WebSocket | null>(null);
+  const rpcPendingRef = useRef<Map<string, RpcEntry>>(new Map());
   const [connected, setConnected] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
@@ -59,13 +80,39 @@ export function useChat(): UseChatReturn {
     };
 
     ws.onmessage = (event) => {
-      const data: StreamEvent = JSON.parse(event.data);
+      const data = JSON.parse(event.data) as Record<string, unknown>;
+      const msgType = data.type;
 
-      switch (data.type) {
+      if (msgType === "messages.list.result") {
+        const requestId = data.request_id as string;
+        const entry = rpcPendingRef.current.get(requestId);
+        if (entry) {
+          clearTimeout(entry.timeout);
+          rpcPendingRef.current.delete(requestId);
+          entry.resolve((data.messages as Message[]) ?? []);
+        }
+        return;
+      }
+
+      if (msgType === "messages.list.error") {
+        const requestId = data.request_id as string;
+        const entry = rpcPendingRef.current.get(requestId);
+        if (entry) {
+          clearTimeout(entry.timeout);
+          rpcPendingRef.current.delete(requestId);
+          entry.reject(
+            new Error(String(data.message ?? "Failed to load messages"))
+          );
+        }
+        return;
+      }
+
+      const streamData = data as unknown as StreamEvent;
+      switch (streamData.type) {
         case "status.start":
           setStreaming(true);
           setStreamingContent("");
-          setCurrentMessageId(data.message_id ?? null);
+          setCurrentMessageId(streamData.message_id ?? null);
           break;
 
         case "tool.result":
@@ -73,8 +120,8 @@ export function useChat(): UseChatReturn {
 
         case "stream.end":
           setStreaming(false);
-          setStreamingContent(data.final_data?.response ?? "");
-          onStreamEnd.current?.(data);
+          setStreamingContent(streamData.final_data?.response ?? "");
+          onStreamEnd.current?.(streamData);
           break;
 
         case "cancel.success":
@@ -85,12 +132,16 @@ export function useChat(): UseChatReturn {
 
         case "error":
           setStreaming(false);
-          setStreamingContent(data.message ?? "An error occurred.");
+          setStreamingContent(streamData.message ?? "An error occurred.");
           break;
       }
     };
 
     ws.onclose = () => {
+      rejectAllRpc(
+        rpcPendingRef.current,
+        new Error("WebSocket closed")
+      );
       setConnected(false);
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         const delay = BASE_DELAY_MS * Math.pow(2, reconnectAttempts.current);
@@ -108,6 +159,10 @@ export function useChat(): UseChatReturn {
     connect();
     return () => {
       clearTimeout(reconnectTimer.current);
+      rejectAllRpc(
+        rpcPendingRef.current,
+        new Error("WebSocket closed")
+      );
       wsRef.current?.close();
     };
   }, [connect]);
@@ -129,6 +184,34 @@ export function useChat(): UseChatReturn {
     );
   }, []);
 
+  const listMessagesWs = useCallback((conversationId: number) => {
+    return new Promise<Message[]>((resolve, reject) => {
+      if (wsRef.current?.readyState !== WebSocket.OPEN) {
+        reject(new Error("WebSocket is not connected"));
+        return;
+      }
+      const requestId =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `req_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const timeout = setTimeout(() => {
+        const entry = rpcPendingRef.current.get(requestId);
+        if (entry) {
+          rpcPendingRef.current.delete(requestId);
+          entry.reject(new Error("Request timed out"));
+        }
+      }, RPC_TIMEOUT_MS);
+      rpcPendingRef.current.set(requestId, { resolve, reject, timeout });
+      wsRef.current.send(
+        JSON.stringify({
+          type: "messages.list",
+          request_id: requestId,
+          conversation_id: conversationId,
+        })
+      );
+    });
+  }, []);
+
   return {
     connected,
     streaming,
@@ -136,6 +219,7 @@ export function useChat(): UseChatReturn {
     currentMessageId,
     sendQuery,
     cancelQuery,
+    listMessagesWs,
     onStreamEnd,
   };
 }

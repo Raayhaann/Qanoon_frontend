@@ -4,7 +4,6 @@ import remarkGfm from "remark-gfm";
 import {
   Bot,
   User,
-  Loader2,
   ExternalLink,
   BookOpen,
   ChevronDown,
@@ -42,7 +41,7 @@ function statusVariant(
 /** Soft light-mode-only badges (no dark fills) */
 const STATUS_CLASSES: Record<string, string> = {
   active:
-    "bg-emerald-50/90 text-emerald-800 ring-1 ring-emerald-200/80",
+    "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80",
   cancelled:
     "bg-red-50/90 text-red-700 ring-1 ring-red-200/80",
   amended:
@@ -263,13 +262,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+      className={`flex items-end gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
       <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-sm ${
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground"
+            : "bg-muted text-muted-foreground ring-1 ring-border/50"
         }`}
       >
         {isUser ? (
@@ -280,12 +279,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
       </div>
 
       {isUser ? (
-        <div className="max-w-[78%] rounded-xl bg-primary px-3.5 py-2.5 text-[13px] leading-relaxed text-primary-foreground">
+        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13.5px] leading-relaxed text-primary-foreground shadow-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
       ) : (
-        <div className="flex min-w-0 max-w-[78%] flex-col items-stretch gap-0">
-          <div className="w-fit max-w-full rounded-xl bg-muted/70 px-3.5 py-2.5 text-[13px] leading-relaxed text-foreground">
+        <div className="flex min-w-0 max-w-[82%] flex-col items-stretch gap-0">
+          <div className="w-fit max-w-full rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
             <div className="prose-chat">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {message.content}
@@ -293,7 +292,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </div>
           </div>
           {sourceDisplay ? (
-            <div className="mt-2.5 w-full min-w-0">
+            <div className="mt-3 w-full min-w-0">
               <AssistantSources display={sourceDisplay} />
             </div>
           ) : null}
@@ -315,12 +314,12 @@ export function StreamingMessage({
   thinkingLabel,
 }: StreamingMessageProps) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+    <div className="flex items-end gap-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border/50">
         <Bot className="h-3.5 w-3.5" />
       </div>
 
-      <div className="max-w-[78%] rounded-xl bg-muted/70 px-3.5 py-2.5 text-[13px] leading-relaxed text-foreground">
+      <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
         {content ? (
           <div className="prose-chat">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -328,9 +327,13 @@ export function StreamingMessage({
             </ReactMarkdown>
           </div>
         ) : thinking ? (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <div className="flex items-center gap-2.5 py-0.5 text-muted-foreground">
             <span className="text-[12px]">{thinkingLabel}</span>
+            <span className="flex gap-1">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:0ms]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:150ms]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:300ms]" />
+            </span>
           </div>
         ) : null}
       </div>
