@@ -2,7 +2,6 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
-  Bot,
   User,
   ExternalLink,
   BookOpen,
@@ -274,7 +273,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? (
           <User className="h-3.5 w-3.5" />
         ) : (
-          <Bot className="h-3.5 w-3.5" />
+          <img
+            src="/small-logo.svg"
+            alt=""
+            className="h-3.5 w-3.5 object-contain"
+            aria-hidden
+          />
         )}
       </div>
 
@@ -316,7 +320,12 @@ export function StreamingMessage({
   return (
     <div className="flex items-end gap-3">
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border/50">
-        <Bot className="h-3.5 w-3.5" />
+        <img
+          src="/small-logo.svg"
+          alt=""
+          className="h-3.5 w-3.5 object-contain"
+          aria-hidden
+        />
       </div>
 
       <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">

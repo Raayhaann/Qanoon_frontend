@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
 import {
   MessageSquare,
   Search,
   FileText,
   Globe,
   Database,
-  Scale,
   ShieldAlert,
   EyeOff,
   Briefcase,
@@ -140,7 +140,7 @@ function Hero() {
   }
 
   return (
-    <section className="relative overflow-hidden pb-20 pt-28 sm:pb-32 sm:pt-36 lg:pt-40">
+    <section className="relative overflow-hidden pb-20 pt-[200px] sm:pb-32">
       {/* Background decoration */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/[0.04] blur-3xl" />
@@ -160,7 +160,7 @@ function Hero() {
           src="/small-logo.svg"
           alt=""
           aria-hidden="true"
-          className={`absolute top-0 h-[700px] w-[700px] opacity-[0.03] ${isAr ? "left-[5%]" : "right-[5%]"}`}
+          className={`absolute top-0 mt-[70px] mb-[70px] h-[700px] w-[700px] opacity-[0.03] ${isAr ? "left-[5%]" : "right-[5%]"}`}
         />
       </div>
 
@@ -176,8 +176,8 @@ function Hero() {
 
           <p className="mt-5 max-w-lg animate-fade-up text-base leading-relaxed text-muted-foreground [animation-delay:0.15s]">
             {t(
-              "Ask in Arabic or Libyan dialect — get the exact law and article that applies, grounded in verified legal texts.",
-              "اسأل بالعربية أو باللهجة الليبية — واحصل على القانون والمادة المناسبة من نصوص قانونية موثّقة."
+              "Ask in Arabic or Libyan dialect get the exact law and article that applies, grounded in verified legal texts.",
+              "اسأل بالعربية أو باللهجة الليبية واحصل على القانون والمادة المناسبة من نصوص قانونية موثّقة."
             )}
           </p>
 
@@ -207,7 +207,7 @@ function Hero() {
             <div className="flex items-center gap-3 border-b border-border/40 px-5 py-3.5">
               <img src="/small-logo.svg" alt="" className="h-7 w-7" />
               <span className="text-sm font-semibold text-foreground">
-                {t("Ask Qanoon.ly", "اسأل قانون.ly")}
+                {t("Ask Qanoon.ly", "اسأل Qanoon.ly")}
               </span>
               <div className="ms-auto flex h-2 w-2 rounded-full bg-accent" />
             </div>
@@ -215,7 +215,12 @@ function Hero() {
             <div className="px-5 py-5">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Scale className="h-4 w-4 text-primary" />
+                  <img
+                    src="/small-logo.svg"
+                    alt=""
+                    className="h-4 w-4 object-contain"
+                    aria-hidden
+                  />
                 </div>
                 <div className="rounded-xl rounded-tl-none bg-muted/70 px-4 py-3">
                   <p className="text-sm text-foreground">
@@ -268,8 +273,8 @@ function HowItWorks() {
       icon: MessageSquare,
       title: t("Describe Your Problem", "صِف مشكلتك"),
       desc: t(
-        "Type your legal question in Arabic or Libyan dialect — no formal language required.",
-        "اكتب سؤالك القانوني بالعربية أو باللهجة الليبية — لا حاجة للغة رسمية."
+        "Type your legal question in Arabic or Libyan dialect no formal language required.",
+        "اكتب سؤالك القانوني بالعربية أو باللهجة الليبية لا حاجة للغة رسمية."
       ),
       color: "bg-primary/10 text-primary",
     },
@@ -307,8 +312,8 @@ function HowItWorks() {
           </h2>
           <p className="mt-4 text-muted-foreground">
             {t(
-              "From question to answer in seconds — no legal expertise needed.",
-              "من السؤال إلى الإجابة في ثوانٍ — بدون خبرة قانونية."
+              "From question to answer in seconds no legal expertise needed.",
+              "من السؤال إلى الإجابة في ثوانٍ بدون خبرة قانونية."
             )}
           </p>
         </div>
@@ -350,10 +355,14 @@ function HowItWorks() {
 /*  Features                                                          */
 /* ------------------------------------------------------------------ */
 
+type FeatureCard =
+  | { icon: LucideIcon; title: string; desc: string; gradient: string }
+  | { imageSrc: string; title: string; desc: string; gradient: string };
+
 function Features() {
   const { t } = useLang();
 
-  const features = [
+  const features: FeatureCard[] = [
     {
       icon: Globe,
       title: t("Context Aware", "فهم السياق"),
@@ -367,13 +376,13 @@ function Features() {
       icon: Database,
       title: t("RAG Technology", "تقنية RAG"),
       desc: t(
-        "Answers are grounded strictly in verified legal texts — no hallucinations, no guesswork.",
-        "الإجابات مبنية حصرياً على نصوص قانونية موثّقة — بدون تخمين أو معلومات مختلقة."
+        "Answers are grounded strictly in verified legal texts no hallucinations, no guesswork.",
+        "الإجابات مبنية حصرياً على نصوص قانونية موثّقة بدون تخمين أو معلومات مختلقة."
       ),
       gradient: "from-accent/[0.08] to-transparent",
     },
     {
-      icon: Scale,
+      imageSrc: "/small-logo.svg",
       title: t("Non-Judgmental", "موضوعي"),
       desc: t(
         "Cites sources and provides objective information rather than subjective opinions or legal advice.",
@@ -405,7 +414,16 @@ function Features() {
               <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${f.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
               <div className="relative">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
-                  <f.icon className="h-6 w-6" />
+                  {"imageSrc" in f ? (
+                    <img
+                      src={f.imageSrc}
+                      alt=""
+                      className="h-6 w-6 object-contain"
+                      aria-hidden
+                    />
+                  ) : (
+                    <f.icon className="h-6 w-6" />
+                  )}
                 </div>
                 <h3 className="mt-5 text-lg font-semibold text-foreground">
                   {f.title}
@@ -469,7 +487,7 @@ function RightsViolations() {
           <p className="mt-4 text-muted-foreground">
             {t(
               "These are among the most frequently reported legal issues. Qanoon.ly helps you find the relevant laws.",
-              "هذه من أكثر المشاكل القانونية شيوعاً. يساعدك قانون.ly في إيجاد القوانين ذات الصلة."
+              "هذه من أكثر المشاكل القانونية شيوعاً. يساعدك Qanoon.ly في إيجاد القوانين ذات الصلة."
             )}
           </p>
         </div>
