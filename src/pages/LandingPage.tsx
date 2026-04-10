@@ -14,10 +14,13 @@ import {
   X,
   Languages,
   Send,
+  User,
+  LogIn,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLang } from "@/context/LangContext";
+import { useAuth } from "@/context/AuthContext";
 
 /* ------------------------------------------------------------------ */
 /*  Navbar                                                            */
@@ -25,6 +28,7 @@ import { useLang } from "@/context/LangContext";
 
 function Navbar() {
   const { lang, toggleLang, t } = useLang();
+  const { user, loading } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -39,6 +43,47 @@ function Navbar() {
     { href: "#features", label: t("Features", "المميزات") },
     { href: "#try-it", label: t("Try It", "جرّبه") },
   ];
+
+  const authButton = loading ? null : user ? (
+    <Link
+      to="/chat"
+      className="flex h-9 items-center gap-2 rounded-lg bg-primary/10 px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
+    >
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/20">
+        <User className="h-3 w-3" />
+      </div>
+      <span className="max-w-[120px] truncate">
+        {user.username ?? user.email}
+      </span>
+    </Link>
+  ) : (
+    <Button asChild size="sm" className="gap-1.5 rounded-lg">
+      <Link to="/login">
+        <LogIn className="h-3.5 w-3.5" />
+        {t("Login / Sign Up", "تسجيل الدخول / إنشاء حساب")}
+      </Link>
+    </Button>
+  );
+
+  const mobileAuthButton = loading ? null : user ? (
+    <Link
+      to="/chat"
+      onClick={() => setMobileOpen(false)}
+      className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary"
+    >
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/20">
+        <User className="h-3 w-3" />
+      </div>
+      <span className="truncate">{user.username ?? user.email}</span>
+    </Link>
+  ) : (
+    <Button asChild size="sm" className="flex-1 gap-1.5 rounded-lg">
+      <Link to="/login" onClick={() => setMobileOpen(false)}>
+        <LogIn className="h-3.5 w-3.5" />
+        {t("Login / Sign Up", "تسجيل الدخول / إنشاء حساب")}
+      </Link>
+    </Button>
+  );
 
   return (
     <header
@@ -73,11 +118,7 @@ function Navbar() {
             <Languages className="h-3.5 w-3.5" />
             {lang === "en" ? "عربي" : "EN"}
           </button>
-          <Button asChild size="sm" className="rounded-lg">
-            <Link to="/chat">
-              {t("Ask a Legal Question", "اطرح سؤالاً قانونياً")}
-            </Link>
-          </Button>
+          {authButton}
         </div>
 
         <button
@@ -110,11 +151,7 @@ function Navbar() {
                 <Languages className="h-3.5 w-3.5" />
                 {lang === "en" ? "عربي" : "EN"}
               </button>
-              <Button asChild size="sm" className="flex-1 rounded-lg">
-                <Link to="/chat" onClick={() => setMobileOpen(false)}>
-                  {t("Ask a Legal Question", "اطرح سؤالاً قانونياً")}
-                </Link>
-              </Button>
+              {mobileAuthButton}
             </div>
           </nav>
         </div>
