@@ -67,6 +67,7 @@ export interface Message {
   response_time: number | null;
   metadata: Record<string, unknown>;
   celery_task_id: string | null;
+  feedback: "like" | "dislike" | null;
   created_at: string;
 }
 
@@ -107,6 +108,18 @@ export async function sendMessage(
   const { data } = await api.post<SendMessageResponse>(
     `/conversations/${conversationId}/messages/`,
     { content }
+  );
+  return data;
+}
+
+export async function updateMessageFeedback(
+  conversationId: number,
+  messageId: number,
+  feedback: "like" | "dislike" | null
+): Promise<Message> {
+  const { data } = await api.patch<Message>(
+    `/conversations/${conversationId}/messages/${messageId}/feedback/`,
+    { feedback }
   );
   return data;
 }

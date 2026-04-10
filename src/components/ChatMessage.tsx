@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -8,6 +8,8 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import {
   getMessageSourcesDisplay,
@@ -146,7 +148,13 @@ function SourceCard({
 
 /* ─── grouped sources section ─────────────────────────────────── */
 
-function AssistantSources({ display }: { display: MessageSourcesDisplay }) {
+function AssistantSources({
+  display,
+  feedbackSlot,
+}: {
+  display: MessageSourcesDisplay;
+  feedbackSlot?: ReactNode;
+}) {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
 
@@ -169,35 +177,38 @@ function AssistantSources({ display }: { display: MessageSourcesDisplay }) {
 
   return (
     <div className="text-start">
-      {/* toggle button — pill style (light badges only) */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all",
-          open
-            ? "border-primary/25 bg-primary/[0.06] text-primary"
-            : "border-zinc-200/90 bg-white text-zinc-600 hover:border-primary/20 hover:bg-primary/[0.04] hover:text-zinc-800"
-        )}
-      >
-        <BookOpen className="h-3.5 w-3.5 shrink-0" />
-        {t("Sources", "المصادر")}
-        <span
+      <div className="flex flex-wrap items-center gap-2">
+        {/* toggle button — pill style (light badges only) */}
+        <button
+          onClick={() => setOpen((v) => !v)}
           className={cn(
-            "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all",
             open
-              ? "bg-primary/15 text-primary"
-              : "bg-zinc-100 text-zinc-600"
+              ? "border-primary/25 bg-primary/[0.06] text-primary"
+              : "border-zinc-200/90 bg-white text-zinc-600 hover:border-primary/20 hover:bg-primary/[0.04] hover:text-zinc-800"
           )}
         >
-          {count}
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-            open ? "rotate-180" : ""
-          )}
-        />
-      </button>
+          <BookOpen className="h-3.5 w-3.5 shrink-0" />
+          {t("Sources", "المصادر")}
+          <span
+            className={cn(
+              "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold",
+              open
+                ? "bg-primary/15 text-primary"
+                : "bg-zinc-100 text-zinc-600"
+            )}
+          >
+            {count}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+              open ? "rotate-180" : ""
+            )}
+          />
+        </button>
+        {feedbackSlot}
+      </div>
 
       {/* expandable panel */}
       {open ? (
@@ -251,43 +262,111 @@ function AssistantSources({ display }: { display: MessageSourcesDisplay }) {
 
 interface ChatMessageProps {
   message: Message;
+  onFeedback?: (messageId: number, feedback: "like" | "dislike" | null) => void;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const { t } = useLang();
   const sourceDisplay = !isUser
     ? getMessageSourcesDisplay(message.metadata?.source)
     : null;
 
-  return (
-    <div
-      className={`flex items-end gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
-    >
-      <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-sm ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground ring-1 ring-border/50"
-        }`}
-      >
-        {isUser ? (
-          <User className="h-3.5 w-3.5" />
-        ) : (
-          <img
-            src="/small-logo.svg"
-            alt=""
-            className="h-3.5 w-3.5 object-contain"
-            aria-hidden
-          />
-        )}
-      </div>
+  function handleFeedback(value: "like" | "dislike") {
+    if (!onFeedback) return;
+    onFeedback(message.id, message.feedback === value ? null : value);
+  }
 
+  const feedbackButtons =
+    onFeedback ? (
+      <>
+        <button
+          type="button"
+          onClick={() => handleFeedback("like")}
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all",
+            message.feedback === "like"
+              ? "bg-emerald-100 text-emerald-600 ring-1 ring-emerald-200/80"
+              : "text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
+          )}
+          title={t("Helpful", "مفيد")}
+        >
+          <ThumbsUp className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => handleFeedback("dislike")}
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all",
+            message.feedback === "dislike"
+              ? "bg-red-100 text-red-500 ring-1 ring-red-200/80"
+              : "text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
+          )}
+          title={t("Not helpful", "غير مفيد")}
+        >
+          <ThumbsDown className="h-3.5 w-3.5" />
+        </button>
+      </>
+    ) : null;
+
+  const avatar = (
+    <div
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-sm ${
+        isUser
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground ring-1 ring-border/50"
+      }`}
+    >
       {isUser ? (
+        <User className="h-3.5 w-3.5" />
+      ) : (
+        <img
+          src="/small-logo.svg"
+          alt=""
+          className="h-3.5 w-3.5 object-contain"
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+
+  if (isUser) {
+    return (
+      <div className="flex flex-row-reverse items-end gap-3">
+        {avatar}
         <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13.5px] leading-relaxed text-primary-foreground shadow-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
-      ) : (
-        <div className="flex min-w-0 max-w-[82%] flex-col items-stretch gap-0">
+      </div>
+    );
+  }
+
+  const metaRow =
+    sourceDisplay || feedbackButtons ? (
+      <div className="mt-2 flex flex-row gap-3">
+        <div className="h-7 w-7 shrink-0" aria-hidden />
+        <div className="min-w-0 max-w-[82%]">
+          {sourceDisplay ? (
+            <AssistantSources
+              display={sourceDisplay}
+              feedbackSlot={
+                feedbackButtons ? (
+                  <div className="flex items-center gap-1">{feedbackButtons}</div>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="flex items-center gap-1">{feedbackButtons}</div>
+          )}
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <div className="flex flex-col gap-0">
+      <div className="flex flex-row items-end gap-3">
+        {avatar}
+        <div className="min-w-0 max-w-[82%]">
           <div className="w-fit max-w-full rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
             <div className="prose-chat">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -295,13 +374,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
               </ReactMarkdown>
             </div>
           </div>
-          {sourceDisplay ? (
-            <div className="mt-3 w-full min-w-0">
-              <AssistantSources display={sourceDisplay} />
-            </div>
-          ) : null}
         </div>
-      )}
+      </div>
+      {metaRow}
     </div>
   );
 }

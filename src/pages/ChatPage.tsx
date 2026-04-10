@@ -27,6 +27,7 @@ import {
   deleteConversation,
   listMessages,
   sendMessage,
+  updateMessageFeedback,
   type Conversation,
   type Message,
 } from "@/api/chat";
@@ -119,6 +120,7 @@ export default function ChatPage() {
               search_strategy: data.final_data!.search_strategy,
             },
             celery_task_id: null,
+            feedback: null,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -167,6 +169,7 @@ export default function ChatPage() {
       response_time: null,
       metadata: {},
       celery_task_id: null,
+      feedback: null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMsg]);
@@ -210,6 +213,7 @@ export default function ChatPage() {
             response_time: null,
             metadata: {},
             celery_task_id: null,
+            feedback: null,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -222,6 +226,23 @@ export default function ChatPage() {
   function handleSuggestion(text: string) {
     setInput(text);
     pendingInitialMsg.current = text;
+  }
+
+  async function handleFeedback(
+    messageId: number,
+    feedback: "like" | "dislike" | null
+  ) {
+    if (!activeId) return;
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, feedback } : m))
+    );
+    try {
+      await updateMessageFeedback(activeId, messageId, feedback);
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, feedback: null } : m))
+      );
+    }
   }
 
   async function handleLogout() {
@@ -503,7 +524,13 @@ export default function ChatPage() {
           ) : (
             <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
               {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} />
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  onFeedback={
+                    msg.role === "assistant" ? handleFeedback : undefined
+                  }
+                />
               ))}
 
               {streaming && (
