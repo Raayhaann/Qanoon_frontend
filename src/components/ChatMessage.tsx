@@ -155,7 +155,7 @@ function AssistantSources({
   display: MessageSourcesDisplay;
   feedbackSlot?: ReactNode;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [open, setOpen] = useState(false);
 
   const count = display.mode === "chunks" ? display.chunks.length : 1;
@@ -177,7 +177,10 @@ function AssistantSources({
 
   return (
     <div className="text-start">
-      <div className="flex flex-wrap items-center gap-2">
+      <div
+        className="flex flex-wrap items-center gap-2"
+        dir={lang === "ar" ? "ltr" : undefined}
+      >
         {/* toggle button — pill style (light badges only) */}
         <button
           onClick={() => setOpen((v) => !v)}
@@ -267,7 +270,8 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const isRtl = lang === "ar";
   const sourceDisplay = !isUser
     ? getMessageSourcesDisplay(message.metadata?.source)
     : null;
@@ -331,12 +335,63 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
   );
 
   if (isUser) {
+    if (isRtl) {
+      return (
+        <div className="flex flex-row items-end gap-3">
+          {avatar}
+          <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13.5px] leading-relaxed text-primary-foreground shadow-sm">
+            <p className="whitespace-pre-wrap">{message.content}</p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-row-reverse items-end gap-3">
         {avatar}
         <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-[13.5px] leading-relaxed text-primary-foreground shadow-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isRtl) {
+    const arMetaRow =
+      sourceDisplay || feedbackButtons ? (
+        <div className="mt-2 flex flex-row-reverse gap-3">
+          <div className="h-7 w-7 shrink-0" aria-hidden />
+          <div className="min-w-0 max-w-[82%]">
+            {sourceDisplay ? (
+              <AssistantSources
+                display={sourceDisplay}
+                feedbackSlot={
+                  feedbackButtons ? (
+                    <div className="flex items-center gap-1">{feedbackButtons}</div>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <div className="flex items-center gap-1">{feedbackButtons}</div>
+            )}
+          </div>
+        </div>
+      ) : null;
+
+    return (
+      <div className="flex flex-col gap-0">
+        <div className="flex flex-row-reverse items-end gap-3">
+          {avatar}
+          <div className="min-w-0 max-w-[82%]">
+            <div className="w-fit max-w-full rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
+              <div className="prose-chat">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        </div>
+        {arMetaRow}
       </div>
     );
   }
@@ -392,6 +447,50 @@ export function StreamingMessage({
   thinking,
   thinkingLabel,
 }: StreamingMessageProps) {
+  const { lang } = useLang();
+  const isRtl = lang === "ar";
+
+  const bubble = (
+    <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
+      {content ? (
+        <div className="prose-chat">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content}
+          </ReactMarkdown>
+        </div>
+      ) : thinking ? (
+        <div className="flex items-center gap-2.5 py-0.5 text-muted-foreground">
+          <span className="text-[12px]">{thinkingLabel}</span>
+          <span className="flex gap-1">
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:0ms]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:150ms]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:300ms]" />
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const logoAvatar = (
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border/50">
+      <img
+        src="/small-logo.svg"
+        alt=""
+        className="h-3.5 w-3.5 object-contain"
+        aria-hidden
+      />
+    </div>
+  );
+
+  if (isRtl) {
+    return (
+      <div className="flex flex-row-reverse items-end gap-3">
+        {logoAvatar}
+        {bubble}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-end gap-3">
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border/50">
