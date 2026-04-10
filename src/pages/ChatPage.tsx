@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
-  Plus,
   LogOut,
   MessageSquare,
   Menu,
@@ -12,7 +11,6 @@ import {
   Briefcase,
   X,
   PanelLeftClose,
-  PanelLeft,
   SquarePen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -308,20 +306,27 @@ export default function ChatPage() {
             </Link>
           )}
           {sidebarCollapsed && (
-            <Link to="/" className="mx-auto flex items-center">
-              <img src="/small-logo.svg" alt="Qanoon.ly" className="h-8 w-8" />
-            </Link>
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              className="mx-auto flex items-center rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              title={t("Expand sidebar", "توسيع الشريط الجانبي")}
+              aria-label={t("Expand sidebar", "توسيع الشريط الجانبي")}
+            >
+              <img src="/small-logo.svg" alt="" className="h-8 w-8" />
+            </button>
           )}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary md:flex"
-          >
-            {sidebarCollapsed ? (
-              <PanelLeft className="h-4 w-4" />
-            ) : (
+          {!sidebarCollapsed && (
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(true)}
+              className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary md:flex"
+              title={t("Collapse sidebar", "طي الشريط الجانبي")}
+              aria-label={t("Collapse sidebar", "طي الشريط الجانبي")}
+            >
               <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
+            </button>
+          )}
           <button
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted md:hidden"
             onClick={() => setSidebarOpen(false)}
@@ -477,17 +482,6 @@ export default function ChatPage() {
             </span>
           </div>
 
-          <div className="ms-auto flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNewChat}
-              className="h-8 w-8 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary"
-              title={t("New Chat", "محادثة جديدة")}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
         </header>
 
         {/* Messages area */}
