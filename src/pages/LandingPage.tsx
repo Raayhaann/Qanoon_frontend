@@ -48,7 +48,7 @@ function Navbar() {
           : "bg-transparent backdrop-blur-none"
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 xl:max-w-[90rem] xl:px-8">
         <Link to="/" className="flex items-center">
           <img src="/full-logo.svg" alt="Qanoon.ly" className="h-8" />
         </Link>
@@ -90,7 +90,7 @@ function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-border/50 bg-background/95 px-5 pb-5 backdrop-blur-xl md:hidden">
+        <div className="border-t border-border/50 bg-background/95 px-4 pb-5 backdrop-blur-xl sm:px-6 md:hidden">
           <nav className="flex flex-col gap-1 pt-3">
             {navLinks.map((link) => (
               <a
@@ -164,8 +164,8 @@ function Hero() {
         />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-5">
-        <div className={isAr ? "text-right" : "max-w-3xl text-left"}>
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem] xl:px-8">
+        <div className={isAr ? "text-right" : "max-w-3xl text-left md:max-w-4xl"}>
           <h1 className="animate-fade-up text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             {t("Your Legal Questions,", "أسئلتك القانونية،")}
             <br />
@@ -202,7 +202,7 @@ function Hero() {
         </div>
 
         {/* Mini chatbot widget */}
-        <div className="relative mx-auto mt-20 max-w-2xl animate-fade-up [animation-delay:0.45s]">
+        <div className="relative mx-auto mt-20 w-full max-w-3xl animate-fade-up md:max-w-4xl xl:max-w-5xl [animation-delay:0.45s]">
           <div className="rounded-2xl border border-border/60 bg-card shadow-2xl shadow-primary/[0.06]">
             <div className="flex items-center gap-3 border-b border-border/40 px-5 py-3.5">
               <img src="/small-logo.svg" alt="" className="h-7 w-7" />
@@ -302,7 +302,7 @@ function HowItWorks() {
 
   return (
     <section id="how-it-works" className="relative py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem] xl:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             {t("How It Works", "كيف يعمل")}
@@ -395,7 +395,7 @@ function Features() {
   return (
     <section id="features" className="relative py-24 sm:py-32">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-muted/40 via-muted/60 to-muted/40" />
-      <div className="relative mx-auto max-w-6xl px-5">
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem] xl:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             {t("Features", "المميزات")}
@@ -476,7 +476,7 @@ function RightsViolations() {
 
   return (
     <section className="py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem] xl:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
             {t("Know Your Rights", "اعرف حقوقك")}
@@ -524,7 +524,7 @@ function ChatbotCTA() {
 
   return (
     <section id="try-it" className="py-16 sm:py-24">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem] xl:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-primary px-8 py-16 opacity-[0.85] sm:px-14 sm:py-20">
           {/* Logo watermark */}
           <img
@@ -578,7 +578,7 @@ function Footer() {
 
   return (
     <footer className="border-t border-border/50 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 sm:flex-row sm:justify-between">
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 px-4 sm:flex-row sm:justify-between sm:px-6 xl:max-w-[90rem] xl:px-8">
         <div className="flex flex-col items-start gap-1">
           <img src="/full-logo.svg" alt="Qanoon.ly" className="h-7" />
           <span className="text-[11px] leading-tight text-muted-foreground">
