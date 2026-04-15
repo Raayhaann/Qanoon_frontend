@@ -18,7 +18,6 @@ import { ChatMessage, StreamingMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LangContext";
-import { useChat, type StreamEvent } from "@/hooks/useChat";
 import {
   listConversations,
   createConversation,
@@ -48,17 +47,6 @@ export default function ChatPage() {
   const skipNextFetch = useRef(false);
   const pendingInitialMsg = useRef<string | null>(null);
 
-  const {
-    connected,
-    streaming,
-    streamingContent,
-    currentMessageId,
-    sendQuery,
-    cancelQuery,
-    listMessagesWs,
-    onStreamEnd,
-  } = useChat();
-
   useEffect(() => {
     listConversations()
       .then(setConversations)
@@ -80,18 +68,15 @@ export default function ChatPage() {
       return;
     }
     if (activeId) {
-      const load = connected
-        ? listMessagesWs(activeId).catch(() => listMessages(activeId))
-        : listMessages(activeId);
-      load.then(setMessages).catch(() => {});
+      listMessages(activeId).then(setMessages).catch(() => {});
     } else {
       setMessages([]);
     }
-  }, [activeId, connected, listMessagesWs]);
+  }, [activeId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
+  }, [messages, sending]);
 
   useEffect(() => {
     if (pendingInitialMsg.current && input === pendingInitialMsg.current) {
@@ -99,39 +84,6 @@ export default function ChatPage() {
       handleSend();
     }
   }, [input]);
-
-  useEffect(() => {
-    onStreamEnd.current = (data: StreamEvent) => {
-      if (data.final_data) {
-        const convId = Number(data.final_data.conversation_id);
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Number(data.message_id),
-            role: "assistant",
-            content: data.final_data!.response,
-            status: "completed",
-            response_time: data.final_data!.response_time,
-            metadata: {
-              sources: data.final_data!.sources,
-              source_metadata: data.final_data!.source_metadata,
-              search_strategy: data.final_data!.search_strategy,
-            },
-            celery_task_id: null,
-            feedback: null,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-        if (!activeId && convId) {
-          setActiveId(convId);
-        }
-        listConversations().then(setConversations).catch(() => {});
-      }
-      setSending(false);
-    };
-  }, [activeId]);
 
   async function handleNewChat() {
     setActiveId(null);
@@ -175,43 +127,38 @@ export default function ChatPage() {
     setInput("");
     setSending(true);
 
-    if (connected) {
-      sendQuery(text, activeId ?? undefined);
-    } else {
-      try {
-        let convId = activeId;
-        if (!convId) {
-          const conv = await createConversation();
-          setConversations((prev) => [conv, ...prev]);
-          convId = conv.id;
-          skipNextFetch.current = true;
-          setActiveId(conv.id);
-        }
-        const resp = await sendMessage(convId, text);
-        const assistant = resp.assistant_response;
-        setMessages((prev) => [...prev, assistant]);
-        listConversations().then(setConversations).catch(() => {});
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            content: t(
-              "Sorry, something went wrong. Please try again.",
-              "عذراً، حدث خطأ ما. يرجى المحاولة مرة أخرى."
-            ),
-            status: "failed",
-            response_time: null,
-            metadata: {},
-            celery_task_id: null,
-            feedback: null,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      } finally {
-        setSending(false);
+    try {
+      let convId = activeId;
+      if (!convId) {
+        const conv = await createConversation();
+        setConversations((prev) => [conv, ...prev]);
+        convId = conv.id;
+        skipNextFetch.current = true;
+        setActiveId(conv.id);
       }
+      const resp = await sendMessage(convId, text);
+      setMessages((prev) => [...prev, resp.assistant_response]);
+      listConversations().then(setConversations).catch(() => {});
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          content: t(
+            "Sorry, something went wrong. Please try again.",
+            "عذراً، حدث خطأ ما. يرجى المحاولة مرة أخرى."
+          ),
+          status: "failed",
+          response_time: null,
+          metadata: {},
+          celery_task_id: null,
+          feedback: null,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setSending(false);
     }
   }
 
@@ -270,7 +217,7 @@ export default function ChatPage() {
     },
   ];
 
-  const showEmptyState = messages.length === 0 && !streaming;
+  const showEmptyState = messages.length === 0 && !sending;
 
   return (
     <div className="flex h-screen bg-background">
@@ -521,11 +468,11 @@ export default function ChatPage() {
                 />
               ))}
 
-              {(sending || streaming) && (
+              {sending && (
                 <StreamingMessage
-                  content={streamingContent}
-                  thinking={!streamingContent}
-                  thinkingLabel={t("Thinking...", "جارٍ التفكير...")}
+                  content=""
+                  thinking={true}
+                  thinkingLabel={t("", "")}
                 />
               )}
 
@@ -539,14 +486,9 @@ export default function ChatPage() {
           value={input}
           onChange={setInput}
           onSend={handleSend}
-          onCancel={
-            currentMessageId
-              ? () => cancelQuery(currentMessageId)
-              : undefined
-          }
-          disabled={sending && !streaming}
+          disabled={sending}
           sending={sending}
-          showCancel={streaming && !!currentMessageId}
+          showCancel={false}
           placeholder={t(
             "Type your legal question...",
             "اكتب سؤالك القانوني..."
