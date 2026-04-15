@@ -6,6 +6,7 @@ import {
   ExternalLink,
   BookOpen,
   ChevronDown,
+  ChevronUp,
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
@@ -61,6 +62,7 @@ function SourceCard({
   chunk: LawSourceChunk;
   index: number;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const { t } = useLang();
   const variant = statusVariant(chunk.status);
   const title = chunk.official_name || chunk.law_name || t("Unnamed law", "قانون بدون اسم");
@@ -112,6 +114,40 @@ function SourceCard({
           ) : null}
         </div>
       </div>
+
+      {chunk.text ? (
+        <>
+          <div className="mx-3 border-t border-border/40" />
+          <div className="px-3 pt-2">
+            <p
+              className={cn(
+                "text-[11.5px] leading-relaxed text-muted-foreground whitespace-pre-wrap transition-all",
+                expanded ? "" : "line-clamp-3"
+              )}
+            >
+              {chunk.text}
+            </p>
+            {chunk.text.length > 180 ? (
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="mt-1 flex items-center gap-0.5 text-[11px] font-medium text-primary/80 hover:text-primary"
+              >
+                {expanded ? (
+                  <>
+                    {t("Show less", "عرض أقل")}
+                    <ChevronUp className="h-3 w-3" />
+                  </>
+                ) : (
+                  <>
+                    {t("Show more", "عرض المزيد")}
+                    <ChevronDown className="h-3 w-3" />
+                  </>
+                )}
+              </button>
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       {chunk.link ? (
         <div className="mt-auto px-3 pb-3 pt-1.5">
