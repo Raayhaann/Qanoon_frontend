@@ -6,8 +6,6 @@ import {
   ExternalLink,
   BookOpen,
   ChevronDown,
-  ChevronUp,
-  FileText,
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
@@ -21,14 +19,6 @@ import { useLang } from "@/context/LangContext";
 import { cn } from "@/lib/utils";
 
 /* ─── helpers ─────────────────────────────────────────────────── */
-
-function parseDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url.slice(0, 40);
-  }
-}
 
 function statusVariant(
   status: string
@@ -51,6 +41,17 @@ const STATUS_CLASSES: Record<string, string> = {
     "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80",
 };
 
+/** Deduplicate law sources by official_name, keeping the first occurrence. */
+function deduplicateSources(chunks: LawSourceChunk[]): LawSourceChunk[] {
+  const seen = new Set<string>();
+  return chunks.filter((c) => {
+    const key = c.official_name || c.law_name;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /* ─── single source card ───────────────────────────────────────── */
 
 function SourceCard({
@@ -60,75 +61,60 @@ function SourceCard({
   chunk: LawSourceChunk;
   index: number;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const { t } = useLang();
   const variant = statusVariant(chunk.status);
+  const title = chunk.official_name || chunk.law_name || t("Unnamed law", "قانون بدون اسم");
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-sm transition-shadow hover:border-zinc-300/90 hover:shadow-md">
-      {/* card header */}
       <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
-        {/* index badge */}
         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[10px] font-bold text-primary">
           {index + 1}
         </span>
 
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-foreground">
-            {chunk.law_name || t("Unnamed law", "قانون بدون اسم")}
+            {title}
           </p>
 
-          {chunk.status ? (
-            <span
-              className={cn(
-                "mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-                STATUS_CLASSES[variant]
-              )}
-            >
-              {chunk.status}
-            </span>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {chunk.status ? (
+              <span
+                className={cn(
+                  "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
+                  STATUS_CLASSES[variant]
+                )}
+              >
+                {chunk.status}
+              </span>
+            ) : null}
+            {chunk.category ? (
+              <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200/80">
+                {chunk.category}
+              </span>
+            ) : null}
+          </div>
+
+          {(chunk.issuer || chunk.law_year || chunk.sector) ? (
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-muted-foreground">
+              {chunk.issuer ? (
+                <span>{chunk.issuer}</span>
+              ) : null}
+              {chunk.law_year && chunk.law_number ? (
+                <span>
+                  {t("No.", "رقم")} {chunk.law_number} / {chunk.law_year}
+                </span>
+              ) : null}
+              {chunk.sector ? (
+                <span>{chunk.sector}</span>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>
 
-      {/* divider */}
-      <div className="mx-3 border-t border-border/40" />
-
-      {/* text excerpt toggle */}
-      {chunk.text ? (
-        <div className="px-3 pt-2">
-          <p
-            className={cn(
-              "text-[11.5px] leading-relaxed text-muted-foreground transition-all",
-              expanded ? "" : "line-clamp-3"
-            )}
-          >
-            {chunk.text}
-          </p>
-          {chunk.text.length > 180 ? (
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="mt-1 flex items-center gap-0.5 text-[11px] font-medium text-primary/80 hover:text-primary"
-            >
-              {expanded ? (
-                <>
-                  {t("Show less", "عرض أقل")}
-                  <ChevronUp className="h-3 w-3" />
-                </>
-              ) : (
-                <>
-                  {t("Show more", "عرض المزيد")}
-                  <ChevronDown className="h-3 w-3" />
-                </>
-              )}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* footer link */}
       {chunk.link ? (
-        <div className="mt-auto px-3 pb-3 pt-2">
+        <div className="mt-auto px-3 pb-3 pt-1.5">
           <a
             href={chunk.link}
             target="_blank"
@@ -136,11 +122,11 @@ function SourceCard({
             className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-primary/25 hover:bg-primary/[0.06] hover:text-primary"
           >
             <ExternalLink className="h-3 w-3 shrink-0" />
-            {parseDomain(chunk.link)}
+            {t("View law", "عرض القانون")}
           </a>
         </div>
       ) : (
-        <div className="pb-3" />
+        <div className="pb-2" />
       )}
     </div>
   );
@@ -158,22 +144,9 @@ function AssistantSources({
   const { t, lang } = useLang();
   const [open, setOpen] = useState(false);
 
-  const count = display.mode === "chunks" ? display.chunks.length : 1;
-
-  /* group chunks by search_query */
-  const groups: { query: string | null; items: (LawSourceChunk & { globalIdx: number })[] }[] = [];
-  if (display.mode === "chunks") {
-    let globalIdx = 0;
-    for (const chunk of display.chunks) {
-      const q = chunk.search_query ?? null;
-      const last = groups[groups.length - 1];
-      if (!last || last.query !== q) {
-        groups.push({ query: q, items: [{ ...chunk, globalIdx: globalIdx++ }] });
-      } else {
-        last.items.push({ ...chunk, globalIdx: globalIdx++ });
-      }
-    }
-  }
+  const uniqueChunks =
+    display.mode === "chunks" ? deduplicateSources(display.chunks) : [];
+  const count = display.mode === "chunks" ? uniqueChunks.length : 1;
 
   return (
     <div className="text-start">
@@ -181,7 +154,6 @@ function AssistantSources({
         className="flex flex-wrap items-center gap-2"
         dir={lang === "ar" ? "ltr" : undefined}
       >
-        {/* toggle button — pill style (light badges only) */}
         <button
           onClick={() => setOpen((v) => !v)}
           className={cn(
@@ -213,7 +185,6 @@ function AssistantSources({
         {feedbackSlot}
       </div>
 
-      {/* expandable panel */}
       {open ? (
         <div className="sources-panel mt-2.5 overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-3">
           {display.mode === "raw" ? (
@@ -221,37 +192,13 @@ function AssistantSources({
               {display.text}
             </pre>
           ) : (
-            <div className="space-y-4">
-              {groups.map((group, gi) => (
-                <div key={gi}>
-                  {/* search query header */}
-                  {group.query ? (
-                    <div className="mb-2.5 flex items-start gap-2">
-                      <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                      <p className="text-[11.5px] leading-snug">
-                        <span className="font-medium text-muted-foreground/90">
-                          {t("Query:", "البحث:")}
-                        </span>{" "}
-                        <span className="text-foreground/80">{group.query}</span>
-                      </p>
-                    </div>
-                  ) : null}
-
-                  <div className="flex flex-col gap-2.5">
-                    {group.items.map((chunk) => (
-                      <SourceCard
-                        key={`${chunk.search_query ?? ""}-${chunk.chunk_index}-${chunk.globalIdx}`}
-                        chunk={chunk}
-                        index={chunk.globalIdx}
-                      />
-                    ))}
-                  </div>
-
-                  {/* group separator */}
-                  {gi < groups.length - 1 ? (
-                    <div className="mt-4 border-t border-border/40" />
-                  ) : null}
-                </div>
+            <div className="flex flex-col gap-2.5">
+              {uniqueChunks.map((chunk, i) => (
+                <SourceCard
+                  key={`${chunk.official_name}-${chunk.law_year}-${chunk.law_number}-${i}`}
+                  chunk={chunk}
+                  index={i}
+                />
               ))}
             </div>
           )}
@@ -273,7 +220,7 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
   const { t, lang } = useLang();
   const isRtl = lang === "ar";
   const sourceDisplay = !isUser
-    ? getMessageSourcesDisplay(message.metadata?.source)
+    ? getMessageSourcesDisplay(message.metadata)
     : null;
 
   function handleFeedback(value: "like" | "dislike") {

@@ -1,6 +1,18 @@
 import api from "./axios";
 
-/** One retrieved law chunk from the backend workflow (matches `parse_retrieved_laws_to_sources`). */
+/** Metadata object for a single source law, as returned by the backend. */
+export interface SourceMeta {
+  official_name?: string;
+  law_year?: number;
+  law_number?: number;
+  status?: string;
+  issuer?: string;
+  sector?: string;
+  category?: string;
+  link?: string;
+}
+
+/** One retrieved law chunk ready for UI display. */
 export interface LawSourceChunk {
   search_query: string | null;
   chunk_index: number;
@@ -8,6 +20,12 @@ export interface LawSourceChunk {
   status: string;
   link: string;
   text: string;
+  official_name: string;
+  law_year: number | null;
+  law_number: number | null;
+  issuer: string;
+  sector: string;
+  category: string;
 }
 
 export type MessageSourcesDisplay =
@@ -15,11 +33,58 @@ export type MessageSourcesDisplay =
   | { mode: "raw"; text: string };
 
 /**
- * Normalize `metadata.source` or API `source` for UI: structured chunks, legacy string, or none.
+ * Build displayable source data from message metadata.
+ *
+ * The backend stores:
+ *   metadata.sources       – string[][]  (text chunks grouped by search query)
+ *   metadata.source_metadata – SourceMeta[][] (parallel metadata per chunk)
+ *
+ * Legacy / WebSocket may also send metadata.source as LawSourceChunk[] or string.
  */
 export function getMessageSourcesDisplay(
-  source: unknown
+  metadata: Record<string, unknown> | undefined | null
 ): MessageSourcesDisplay | null {
+  if (!metadata) return null;
+
+  const rawSources = metadata.sources as unknown;
+  const rawMeta = metadata.source_metadata as unknown;
+  const legacySource = metadata.source as unknown;
+
+  if (
+    Array.isArray(rawSources) &&
+    rawSources.length > 0 &&
+    Array.isArray(rawMeta) &&
+    rawMeta.length > 0
+  ) {
+    const chunks: LawSourceChunk[] = [];
+    let globalIdx = 0;
+    for (let i = 0; i < rawSources.length; i++) {
+      const textArr = rawSources[i];
+      const metaArr = Array.isArray(rawMeta[i]) ? rawMeta[i] : [];
+      if (!Array.isArray(textArr)) continue;
+      for (let j = 0; j < textArr.length; j++) {
+        const text = typeof textArr[j] === "string" ? textArr[j] : "";
+        const m = (metaArr[j] ?? {}) as Record<string, unknown>;
+        chunks.push({
+          search_query: null,
+          chunk_index: globalIdx++,
+          law_name: String(m.official_name ?? ""),
+          status: String(m.status ?? ""),
+          link: String(m.link ?? ""),
+          text,
+          official_name: String(m.official_name ?? ""),
+          law_year: typeof m.law_year === "number" ? m.law_year : null,
+          law_number: typeof m.law_number === "number" ? m.law_number : null,
+          issuer: String(m.issuer ?? ""),
+          sector: String(m.sector ?? ""),
+          category: String(m.category ?? ""),
+        });
+      }
+    }
+    return chunks.length ? { mode: "chunks", chunks } : null;
+  }
+
+  const source = legacySource ?? rawSources;
   if (source === undefined || source === null) return null;
   if (typeof source === "string") {
     const t = source.trim();
@@ -42,10 +107,16 @@ export function getMessageSourcesDisplay(
         typeof o.chunk_index === "number"
           ? o.chunk_index
           : Number(o.chunk_index) || 0,
-      law_name: String(o.law_name ?? ""),
+      law_name: String(o.law_name ?? o.official_name ?? ""),
       status: String(o.status ?? ""),
       link: String(o.link ?? ""),
       text: String(o.text ?? ""),
+      official_name: String(o.official_name ?? o.law_name ?? ""),
+      law_year: typeof o.law_year === "number" ? o.law_year : null,
+      law_number: typeof o.law_number === "number" ? o.law_number : null,
+      issuer: String(o.issuer ?? ""),
+      sector: String(o.sector ?? ""),
+      category: String(o.category ?? ""),
     });
   }
   return chunks.length ? { mode: "chunks", chunks } : null;
@@ -74,7 +145,8 @@ export interface Message {
 interface SendMessageResponse {
   message: Message;
   assistant_response: Message;
-  source?: LawSourceChunk[] | string;
+  sources?: string[][];
+  source_metadata?: SourceMeta[][];
   search_strategy?: string;
 }
 

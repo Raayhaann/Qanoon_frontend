@@ -114,7 +114,8 @@ export default function ChatPage() {
             status: "completed",
             response_time: data.final_data!.response_time,
             metadata: {
-              source: data.final_data!.source,
+              sources: data.final_data!.sources,
+              source_metadata: data.final_data!.source_metadata,
               search_strategy: data.final_data!.search_strategy,
             },
             celery_task_id: null,
@@ -188,14 +189,7 @@ export default function ChatPage() {
         }
         const resp = await sendMessage(convId, text);
         const assistant = resp.assistant_response;
-        const assistantWithSources: Message = {
-          ...assistant,
-          metadata: {
-            ...assistant.metadata,
-            ...(resp.source !== undefined ? { source: resp.source } : {}),
-          },
-        };
-        setMessages((prev) => [...prev, assistantWithSources]);
+        setMessages((prev) => [...prev, assistant]);
         listConversations().then(setConversations).catch(() => {});
       } catch {
         setMessages((prev) => [
