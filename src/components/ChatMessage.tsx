@@ -340,6 +340,14 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
     );
   }
 
+  const responseTimeLabel = message.response_time != null ? (
+    <div className="mt-1 flex justify-end">
+      <span className="text-[10px] tabular-nums text-muted-foreground">
+        {message.response_time}s
+      </span>
+    </div>
+  ) : null;
+
   if (isRtl) {
     const arMetaRow =
       sourceDisplay || feedbackButtons ? (
@@ -373,6 +381,7 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
                   {message.content}
                 </ReactMarkdown>
               </div>
+              {responseTimeLabel}
             </div>
           </div>
         </div>
@@ -413,6 +422,7 @@ export function ChatMessage({ message, onFeedback }: ChatMessageProps) {
                 {message.content}
               </ReactMarkdown>
             </div>
+            {responseTimeLabel}
           </div>
         </div>
       </div>
