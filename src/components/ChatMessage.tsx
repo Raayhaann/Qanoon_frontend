@@ -459,7 +459,7 @@ export function StreamingMessage({
   const elapsed = useElapsedSeconds();
 
   const timer = (
-    <span className="text-[10px] tabular-nums text-muted-foreground/50">
+    <span className="text-[10px] tabular-nums text-muted-foreground">
       {formatElapsed(elapsed)}
     </span>
   );

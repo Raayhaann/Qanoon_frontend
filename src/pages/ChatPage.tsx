@@ -521,7 +521,7 @@ export default function ChatPage() {
                 />
               ))}
 
-              {streaming && (
+              {(sending || streaming) && (
                 <StreamingMessage
                   content={streamingContent}
                   thinking={!streamingContent}
