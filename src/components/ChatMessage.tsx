@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -119,14 +119,16 @@ function SourceCard({
         <>
           <div className="mx-3 border-t border-border/40" />
           <div className="px-3 pt-2">
-            <p
+            <div
               className={cn(
-                "text-[11.5px] leading-relaxed text-muted-foreground whitespace-pre-wrap transition-all",
+                "prose-source text-[11.5px] leading-relaxed text-muted-foreground transition-all",
                 expanded ? "" : "line-clamp-3"
               )}
             >
-              {chunk.text}
-            </p>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {chunk.text}
+              </ReactMarkdown>
+            </div>
             {chunk.text.length > 180 ? (
               <button
                 onClick={() => setExpanded((v) => !v)}
@@ -425,6 +427,28 @@ interface StreamingMessageProps {
   thinkingLabel: string;
 }
 
+function useElapsedSeconds() {
+  const startRef = useRef(Date.now());
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    setElapsed(0);
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return elapsed;
+}
+
+function formatElapsed(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? `${m}:${String(sec).padStart(2, "0")}` : `${sec}s`;
+}
+
 export function StreamingMessage({
   content,
   thinking,
@@ -432,15 +456,25 @@ export function StreamingMessage({
 }: StreamingMessageProps) {
   const { lang } = useLang();
   const isRtl = lang === "ar";
+  const elapsed = useElapsedSeconds();
+
+  const timer = (
+    <span className="text-[10px] tabular-nums text-muted-foreground/50">
+      {formatElapsed(elapsed)}
+    </span>
+  );
 
   const bubble = (
     <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
       {content ? (
-        <div className="prose-chat">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {content}
-          </ReactMarkdown>
-        </div>
+        <>
+          <div className="prose-chat">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {content}
+            </ReactMarkdown>
+          </div>
+          <div className="mt-1 flex justify-end">{timer}</div>
+        </>
       ) : thinking ? (
         <div className="flex items-center gap-2.5 py-0.5 text-muted-foreground">
           <span className="text-[12px]">{thinkingLabel}</span>
@@ -449,6 +483,7 @@ export function StreamingMessage({
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:150ms]" />
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:300ms]" />
           </span>
+          {timer}
         </div>
       ) : null}
     </div>
@@ -476,33 +511,8 @@ export function StreamingMessage({
 
   return (
     <div className="flex items-end gap-3">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border/50">
-        <img
-          src="/small-logo.svg"
-          alt=""
-          className="h-3.5 w-3.5 object-contain"
-          aria-hidden
-        />
-      </div>
-
-      <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/30 bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground shadow-sm">
-        {content ? (
-          <div className="prose-chat">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {content}
-            </ReactMarkdown>
-          </div>
-        ) : thinking ? (
-          <div className="flex items-center gap-2.5 py-0.5 text-muted-foreground">
-            <span className="text-[12px]">{thinkingLabel}</span>
-            <span className="flex gap-1">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:0ms]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:150ms]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:300ms]" />
-            </span>
-          </div>
-        ) : null}
-      </div>
+      {logoAvatar}
+      {bubble}
     </div>
   );
 }
