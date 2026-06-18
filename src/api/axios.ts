@@ -9,10 +9,17 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-let accessToken: string | null = null;
+const TOKEN_KEY = "qanoon_access_token";
+
+let accessToken: string | null = localStorage.getItem(TOKEN_KEY);
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
 }
 
 export function getAccessToken() {

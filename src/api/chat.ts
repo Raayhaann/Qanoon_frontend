@@ -160,7 +160,7 @@ export async function createConversation(): Promise<Conversation> {
   return data;
 }
 
-/** REST fallback when WebSocket is disconnected; primary path is `listMessagesWs` in `useChat`. */
+/** REST fallback when WebSocket is disconnected; primary path is `loadMessages` in `useChat`. */
 export async function listMessages(conversationId: number): Promise<Message[]> {
   const { data } = await api.get<Message[]>(
     `/conversations/${conversationId}/messages/`
@@ -172,7 +172,7 @@ export async function deleteConversation(id: number): Promise<void> {
   await api.delete(`/conversations/${id}/`);
 }
 
-/** REST fallback when WebSocket is disconnected; primary send path is WebSocket `query` in `useChat`. */
+/** REST fallback when WebSocket is disconnected; primary send path is `sendQuery` in `useChat`. */
 export async function sendMessage(
   conversationId: number,
   content: string

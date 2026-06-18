@@ -20,21 +20,22 @@ import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LangContext";
 import {
   listConversations,
-  createConversation,
   deleteConversation,
-  listMessages,
-  sendMessage,
   updateMessageFeedback,
   type Conversation,
   type Message,
 } from "@/api/chat";
+import { useChat } from "@/hooks/useChat";
 import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const { t } = useLang();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { wsConnected, sendQuery, loadMessages, cancelQuery, processingMessageId } =
+    useChat({ enabled: !!user && !authLoading });
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -68,11 +69,11 @@ export default function ChatPage() {
       return;
     }
     if (activeId) {
-      listMessages(activeId).then(setMessages).catch(() => {});
+      loadMessages(activeId).then(setMessages).catch(() => {});
     } else {
       setMessages([]);
     }
-  }, [activeId]);
+  }, [activeId, loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -128,20 +129,27 @@ export default function ChatPage() {
     setSending(true);
 
     try {
-      let convId = activeId;
-      if (!convId) {
-        const conv = await createConversation();
-        setConversations((prev) => [conv, ...prev]);
-        convId = conv.id;
+      const result = await sendQuery(text, activeId);
+
+      if (!activeId) {
         skipNextFetch.current = true;
-        setActiveId(conv.id);
+        setActiveId(result.conversationId);
       }
-      const resp = await sendMessage(convId, text);
-      setMessages((prev) => [...prev, resp.assistant_response]);
-      listConversations().then(setConversations).catch(() => {});
-    } catch {
+
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((m) => m.id !== tempUserMsg.id),
+        tempUserMsg,
+        result.assistantMessage,
+      ]);
+      listConversations().then(setConversations).catch(() => {});
+    } catch (err) {
+      if (err instanceof Error && err.message === "Request cancelled") {
+        setMessages((prev) => prev.filter((m) => m.id !== tempUserMsg.id));
+        return;
+      }
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== tempUserMsg.id),
+        tempUserMsg,
         {
           id: Date.now() + 1,
           role: "assistant",
@@ -157,6 +165,16 @@ export default function ChatPage() {
           created_at: new Date().toISOString(),
         },
       ]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleCancel() {
+    try {
+      await cancelQuery();
+    } catch {
+      // ignore cancel errors
     } finally {
       setSending(false);
     }
@@ -486,9 +504,10 @@ export default function ChatPage() {
           value={input}
           onChange={setInput}
           onSend={handleSend}
+          onCancel={handleCancel}
           disabled={sending}
           sending={sending}
-          showCancel={false}
+          showCancel={sending && wsConnected && processingMessageId != null}
           placeholder={t(
             "Type your legal question...",
             "اكتب سؤالك القانوني..."

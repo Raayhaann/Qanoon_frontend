@@ -11,9 +11,10 @@ import {
   googleLogin as apiGoogleLogin,
   logout as apiLogout,
   getMe,
+  refreshToken,
   type User,
 } from "@/api/auth";
-import { setAccessToken } from "@/api/axios";
+import { getAccessToken, setAccessToken } from "@/api/axios";
 
 interface AuthContextType {
   user: User | null;
@@ -30,10 +31,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMe()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    async function restoreSession() {
+      try {
+        if (!getAccessToken()) {
+          try {
+            await refreshToken();
+          } catch {
+            // No refresh cookie — user is not logged in
+          }
+        }
+        setUser(await getMe());
+      } catch {
+        setUser(null);
+        setAccessToken(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    restoreSession();
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
