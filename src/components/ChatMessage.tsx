@@ -3,7 +3,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   User,
-  ExternalLink,
   BookOpen,
   ChevronDown,
   ChevronUp,
@@ -151,21 +150,7 @@ function SourceCard({
         </>
       ) : null}
 
-      {chunk.link ? (
-        <div className="mt-auto px-3 pb-3 pt-1.5">
-          <a
-            href={chunk.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-primary/25 hover:bg-primary/[0.06] hover:text-primary"
-          >
-            <ExternalLink className="h-3 w-3 shrink-0" />
-            {t("View law", "عرض القانون")}
-          </a>
-        </div>
-      ) : (
-        <div className="pb-2" />
-      )}
+      <div className="pb-2" />
     </div>
   );
 }
